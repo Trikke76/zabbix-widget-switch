@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2.0,
+  "id": "switch",
+  "type": "widget",
+  "name": "Switch",
+  "namespace": "SwitchWidget",
+  "version": "1.0.0",
+  "author": "Local",
+  "description": "Switch-style dashboard widget with configurable rows/ports and trigger-based port status colors.",
+  "url": "",
+  "actions": {
+    "widget.switch.view": {
+      "class": "WidgetView"
+    },
+    "widget.switch.triggers": {
+      "class": "WidgetTriggers"
+    }
+  }
+}
