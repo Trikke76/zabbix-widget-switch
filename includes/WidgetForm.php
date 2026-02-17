@@ -34,6 +34,14 @@ class WidgetForm extends CWidgetForm {
 				->setDefault('')
 		);
 		$this->addField(
+			(new CWidgetFieldSelect('legend_size', _('Legend size'), [
+				12 => _('Small'),
+				14 => _('Normal'),
+				16 => _('Large'),
+				18 => _('Extra large')
+			]))->setDefault(14)
+		);
+		$this->addField(
 			(new CWidgetFieldSelect('preset', _('Profile'), [
 				0 => _('Custom'),
 				1 => $this->getRequestedString('profile1_name', _('Access 24')),

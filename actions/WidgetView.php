@@ -34,10 +34,15 @@ class WidgetView extends CControllerDashboardWidgetView {
 		}
 		unset($port);
 
-		$this->setResponse(new CControllerResponseData([
-			'name' => $this->widget->getDefaultName(),
-			'legend_text' => trim((string) ($this->fields_values['legend_text'] ?? '')),
-			'switch_brand' => trim((string) ($this->fields_values['switch_brand'] ?? 'NETSWITCH')),
+			$this->setResponse(new CControllerResponseData([
+				'name' => $this->widget->getDefaultName(),
+				'legend_text' => trim((string) ($this->fields_values['legend_text'] ?? '')),
+				'legend_size' => $this->clamp(
+					$this->extractPositiveInt($this->fields_values['legend_size'] ?? 14),
+					12,
+					18
+				),
+				'switch_brand' => trim((string) ($this->fields_values['switch_brand'] ?? 'NETSWITCH')),
 			'switch_model' => trim((string) ($this->fields_values['switch_model'] ?? 'SW-24G')),
 			'switch_size' => $this->clamp(
 				$this->extractPositiveInt($this->fields_values['switch_size'] ?? 100),

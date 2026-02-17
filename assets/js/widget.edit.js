@@ -311,6 +311,188 @@
 		}
 	}
 
+	function ensurePortFieldsetGrid() {
+		let portFieldsets = Array.from(document.querySelectorAll('fieldset.switch-port-fieldset[data-port-index]'));
+		if (portFieldsets.length === 0) {
+			portFieldsets = Array.from(document.querySelectorAll('fieldset.collapsible')).filter((fieldset) => {
+				const title = (fieldset.querySelector('legend, h4, .header')?.textContent || '').trim();
+				return /^Port\s+\d+/i.test(title);
+			});
+		}
+		if (portFieldsets.length === 0) {
+			return;
+		}
+
+		const first = portFieldsets[0];
+		let grid = first.closest('.switch-port-fieldsets-grid');
+		let parent = null;
+		if (grid) {
+			parent = grid.parentNode;
+		}
+		else {
+			parent = first.parentNode;
+		}
+		if (!parent) {
+			return;
+		}
+
+		if (!grid) {
+			for (const child of Array.from(parent.children || [])) {
+				if (child.classList && child.classList.contains('switch-port-fieldsets-grid')) {
+					grid = child;
+					break;
+				}
+			}
+		}
+		let leftCol;
+		let rightCol;
+		if (!grid) {
+			grid = document.createElement('div');
+			grid.className = 'switch-port-fieldsets-grid';
+			leftCol = document.createElement('div');
+			rightCol = document.createElement('div');
+			leftCol.className = 'switch-port-column';
+			rightCol.className = 'switch-port-column';
+			grid.appendChild(leftCol);
+			grid.appendChild(rightCol);
+			parent.insertBefore(grid, first);
+		}
+		else {
+			const cols = Array.from(grid.children || []).filter((child) =>
+				child.classList && child.classList.contains('switch-port-column')
+			);
+			leftCol = cols[0] || null;
+			rightCol = cols[1] || null;
+			if (!leftCol) {
+				leftCol = document.createElement('div');
+				leftCol.className = 'switch-port-column';
+				grid.appendChild(leftCol);
+			}
+			if (!rightCol) {
+				rightCol = document.createElement('div');
+				rightCol.className = 'switch-port-column';
+				grid.appendChild(rightCol);
+			}
+		}
+
+		portFieldsets.sort((a, b) => {
+			const ai = Number(a.getAttribute('data-port-index') || '0');
+			const bi = Number(b.getAttribute('data-port-index') || '0');
+			return ai - bi;
+		});
+
+		const splitAt = Math.ceil(portFieldsets.length / 2);
+		for (const [index, fs] of portFieldsets.entries()) {
+			if (!fs.getAttribute('data-port-index')) {
+				fs.setAttribute('data-port-index', String(index + 1));
+			}
+			fs.classList.add('switch-port-fieldset');
+			const target = index < splitAt ? leftCol : rightCol;
+			if (target && fs.parentNode !== target) {
+				target.appendChild(fs);
+			}
+		}
+
+		if (!document.getElementById('switch-port-fieldsets-grid-style')) {
+			const style = document.createElement('style');
+			style.id = 'switch-port-fieldsets-grid-style';
+				style.textContent = [
+					'.switch-port-fieldsets-grid{display:flex;gap:14px;grid-column:1 / -1;justify-self:stretch;width:100%;align-items:flex-start;}',
+					'.switch-port-fieldsets-grid > .switch-port-column{flex:1 1 0;min-width:0;}',
+					'.switch-port-fieldsets-grid .switch-port-fieldset{min-width:0;margin:0 0 10px !important;width:100% !important;}',
+					'.switch-port-fieldsets-grid .switch-port-fieldset .form-field{display:grid !important;grid-template-columns:170px minmax(0,1fr) !important;align-items:center !important;column-gap:10px !important;row-gap:6px !important;}',
+					'.switch-port-fieldsets-grid .switch-port-fieldset .form-field > label{margin:0 !important;display:block !important;}',
+					'.switch-port-fieldsets-grid .switch-port-fieldset .form-field > :not(label){min-width:0;}',
+					'.switch-port-fieldsets-grid .switch-port-fieldset .form-field input,',
+					'.switch-port-fieldsets-grid .switch-port-fieldset .form-field select{width:100% !important;max-width:none !important;}'
+				].join('');
+			document.head.appendChild(style);
+		}
+	}
+
+	function findFieldControlByLabel(fieldset, label) {
+		const forId = label.getAttribute('for');
+		if (forId) {
+			const escaped = (window.CSS && typeof window.CSS.escape === 'function')
+				? window.CSS.escape(forId)
+				: forId.replace(/([ #;?%&,.+*~\':"!^$[\]()=>|\/@])/g, '\\$1');
+			const byFor = fieldset.querySelector(`#${escaped}`);
+			if (byFor) {
+				return byFor;
+			}
+		}
+
+		let scan = label.parentElement;
+		while (scan && scan !== fieldset) {
+			const direct = scan.querySelector('input, select, textarea');
+			if (direct) {
+				return direct;
+			}
+			scan = scan.nextElementSibling;
+		}
+
+		return null;
+	}
+
+	function getDirectChildUnderRoot(node, root) {
+		let current = node;
+		while (current.parentElement && current.parentElement !== root) {
+			current = current.parentElement;
+		}
+		return current;
+	}
+
+	function ensurePortFieldRowsAligned() {
+		for (const fieldset of document.querySelectorAll('fieldset.switch-port-fieldset[data-port-index]')) {
+			const portLabelPattern = /^Port\s+\d+\s+/i;
+			const labels = Array.from(fieldset.querySelectorAll('label')).filter((label) => {
+				const text = (label.textContent || '').trim();
+				return portLabelPattern.test(text);
+			});
+
+			for (const label of labels) {
+				if (label.closest('.switch-port-inline-row')) {
+					continue;
+				}
+
+				const control = findFieldControlByLabel(fieldset, label);
+				if (!control) {
+					continue;
+				}
+
+				const labelBlock = getDirectChildUnderRoot(label, fieldset);
+				const controlBlock = getDirectChildUnderRoot(control, fieldset);
+				if (!labelBlock || !controlBlock || labelBlock === controlBlock) {
+					continue;
+				}
+				if (labelBlock.closest('.switch-port-inline-row') || controlBlock.closest('.switch-port-inline-row')) {
+					continue;
+				}
+				if (!labelBlock.parentElement || !controlBlock.parentElement) {
+					continue;
+				}
+
+				const row = document.createElement('div');
+				row.className = 'switch-port-inline-row';
+				labelBlock.parentElement.insertBefore(row, labelBlock);
+				row.appendChild(labelBlock);
+				row.appendChild(controlBlock);
+			}
+		}
+
+		if (!document.getElementById('switch-port-inline-row-style')) {
+			const style = document.createElement('style');
+			style.id = 'switch-port-inline-row-style';
+			style.textContent = [
+				'.switch-port-inline-row{display:grid;grid-template-columns:170px minmax(0,1fr);column-gap:10px;align-items:center;margin:0 0 8px 0;padding-left:48px;}',
+				'.switch-port-inline-row label{margin:0 !important;}',
+				'.switch-port-inline-row input,.switch-port-inline-row select,.switch-port-inline-row textarea{width:100% !important;max-width:none !important;}',
+				'@media (max-width:900px){.switch-port-inline-row{grid-template-columns:1fr;row-gap:6px;padding-left:32px;}}'
+			].join('');
+			document.head.appendChild(style);
+		}
+	}
+
 	function readIntField(fieldName, fallback) {
 		const field = findField(fieldName);
 		if (!field) {
@@ -688,6 +870,8 @@
 				if (typeof window.switch_widget_apply_preset_if_changed === 'function') {
 					window.switch_widget_apply_preset_if_changed();
 				}
+				ensurePortFieldsetGrid();
+				ensurePortFieldRowsAligned();
 				updatePortFieldsetVisibility();
 
 				for (const field of getColorFields()) {

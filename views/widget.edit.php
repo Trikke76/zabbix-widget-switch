@@ -12,6 +12,7 @@ foreach (array_keys($data['fields']) as $field_name) {
 $form->addField(new CWidgetFieldMultiSelectGroupView($data['fields']['groupids']));
 $form->addField(new CWidgetFieldMultiSelectHostView($data['fields']['hostids']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['legend_text']));
+$form->addField(new CWidgetFieldSelectView($data['fields']['legend_size']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['preset']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_brand']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_model']));

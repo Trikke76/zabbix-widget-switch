@@ -1,7 +1,9 @@
 <?php declare(strict_types = 1);
 
 $css = implode('', [
-	'.port24-legend{font-size:calc(12px * var(--port24-scale));color:#6b7280;margin-bottom:calc(8px * var(--port24-scale));}',
+	'.port24-legend{display:inline-block;font-size:calc(var(--port24-legend-size,14px) * var(--port24-scale));line-height:1.35;color:#4b5563;',
+	'background:linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);border:1px solid #d7dee8;border-radius:6px;',
+	'padding:calc(6px * var(--port24-scale)) calc(10px * var(--port24-scale));margin-bottom:calc(10px * var(--port24-scale));}',
 	'.port24-switch{background:linear-gradient(180deg,#5a6571 0%,#3d4651 22%,#2b323b 100%);',
 	'border:1px solid #212831;border-radius:10px;padding:calc(14px * var(--port24-scale));box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 16px rgba(0,0,0,.25);}',
 	'.port24-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:calc(8px * var(--port24-scale));color:#cfd8e2;font-size:calc(10px * var(--port24-scale));letter-spacing:.08em;text-transform:uppercase;}',
@@ -18,29 +20,34 @@ $css = implode('', [
 	'@media (max-width:1100px){.port24-sfp-grid{grid-template-columns:repeat(auto-fit,minmax(calc(78px * var(--port24-scale)),1fr));}}',
 	'@media (max-width:700px){.port24-grid{grid-template-columns:repeat(auto-fit,minmax(calc(68px * var(--port24-scale)),1fr));}}',
 	'.port24-card{position:relative;display:block;text-decoration:none;color:#d8e1ea;background:#11161b;border:1px solid #2b3642;',
-	'border-radius:4px;padding:calc(5px * var(--port24-scale)) calc(4px * var(--port24-scale)) calc(16px * var(--port24-scale)) calc(4px * var(--port24-scale));min-height:calc(52px * var(--port24-scale));box-shadow:inset 0 -1px 0 rgba(255,255,255,.04);}',
+	'border-radius:4px;padding:calc(4px * var(--port24-scale)) calc(4px * var(--port24-scale)) calc(12px * var(--port24-scale)) calc(4px * var(--port24-scale));min-height:calc(44px * var(--port24-scale));box-shadow:inset 0 -1px 0 rgba(255,255,255,.04);}',
 	'.port24-card:hover{border-color:#7b8794;}',
-	'.port24-jack{height:calc(28px * var(--port24-scale));position:relative;border:1px solid #1f2730;border-radius:2px 2px 4px 4px;',
+	'.port24-jack{height:calc(22px * var(--port24-scale));position:relative;border:1px solid #1f2730;border-radius:2px 2px 4px 4px;',
 	'background:linear-gradient(180deg,#eef3f8 0 20%,#0d1318 20% 100%);overflow:hidden;}',
-	'.port24-jack:before{content:"";position:absolute;left:calc(7px * var(--port24-scale));right:calc(7px * var(--port24-scale));top:0;height:calc(9px * var(--port24-scale));background:#06090d;',
+	'.port24-jack:before{content:"";position:absolute;left:calc(6px * var(--port24-scale));right:calc(6px * var(--port24-scale));top:0;height:calc(7px * var(--port24-scale));background:#06090d;',
 	'clip-path:polygon(12% 100%,88% 100%,100% 0,0 0);} ',
-	'.port24-jack:after{content:"";position:absolute;left:calc(6px * var(--port24-scale));right:calc(6px * var(--port24-scale));bottom:calc(2px * var(--port24-scale));height:calc(6px * var(--port24-scale));',
+	'.port24-jack:after{content:"";position:absolute;left:calc(5px * var(--port24-scale));right:calc(5px * var(--port24-scale));bottom:calc(2px * var(--port24-scale));height:calc(5px * var(--port24-scale));',
 	'background:repeating-linear-gradient(90deg,#c4ccd5 0 2px,transparent 2px 4px);opacity:.85;}',
-	'.port24-jack-sfp{height:calc(28px * var(--port24-scale));position:relative;border:1px solid #38434f;border-radius:2px;',
+	'.port24-jack-sfp{height:calc(22px * var(--port24-scale));position:relative;border:1px solid #38434f;border-radius:2px;',
 	'background:linear-gradient(180deg,#131a22 0%,#0b1016 100%);overflow:hidden;}',
-	'.port24-jack-sfp:before{content:"";position:absolute;left:calc(5px * var(--port24-scale));right:calc(5px * var(--port24-scale));top:calc(5px * var(--port24-scale));',
-	'height:calc(12px * var(--port24-scale));border:1px solid #5d6a78;border-radius:2px;background:#090d12;}',
-	'.port24-jack-sfp:after{content:"";position:absolute;left:calc(9px * var(--port24-scale));right:calc(9px * var(--port24-scale));bottom:calc(3px * var(--port24-scale));',
-	'height:calc(4px * var(--port24-scale));background:#8a96a5;border-radius:1px;opacity:.85;}',
-	'.port24-led{position:absolute;right:calc(5px * var(--port24-scale));top:calc(5px * var(--port24-scale));width:calc(9px * var(--port24-scale));height:calc(9px * var(--port24-scale));border-radius:50%;background:var(--port-color,#2F855A);',
+	'.port24-jack-sfp:before{content:"";position:absolute;left:calc(4px * var(--port24-scale));right:calc(4px * var(--port24-scale));top:calc(4px * var(--port24-scale));',
+	'height:calc(10px * var(--port24-scale));border:1px solid #5d6a78;border-radius:2px;background:#090d12;}',
+	'.port24-jack-sfp:after{content:"";position:absolute;left:calc(7px * var(--port24-scale));right:calc(7px * var(--port24-scale));bottom:calc(2px * var(--port24-scale));',
+	'height:calc(3px * var(--port24-scale));background:#8a96a5;border-radius:1px;opacity:.85;}',
+	'.port24-led{position:absolute;right:calc(4px * var(--port24-scale));top:calc(4px * var(--port24-scale));width:calc(8px * var(--port24-scale));height:calc(8px * var(--port24-scale));border-radius:50%;background:var(--port-color,#2F855A);',
 	'box-shadow:0 0 0 1px rgba(255,255,255,.2),0 0 calc(12px * var(--port24-scale)) var(--port-color,#2F855A),0 0 calc(20px * var(--port24-scale)) var(--port-color,#2F855A);}',
-	'.port24-label{position:absolute;left:calc(4px * var(--port24-scale));right:calc(4px * var(--port24-scale));bottom:calc(2px * var(--port24-scale));text-align:center;font-size:calc(10px * var(--port24-scale));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#c9d3de;}'
+	'.port24-label{position:absolute;left:calc(4px * var(--port24-scale));right:calc(4px * var(--port24-scale));bottom:calc(2px * var(--port24-scale));text-align:center;font-size:calc(9px * var(--port24-scale));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#c9d3de;}'
 ]);
 
 $container = new CDiv();
 $scale = max(0.4, min(1.0, ((int) ($data['switch_size'] ?? 100)) / 100));
+$legend_size = max(12, min(18, (int) ($data['legend_size'] ?? 14)));
 if ($data['legend_text'] !== '') {
-	$container->addItem((new CDiv($data['legend_text']))->addClass('port24-legend')->setAttribute('style', '--port24-scale: '.$scale.';'));
+	$container->addItem(
+		(new CDiv($data['legend_text']))
+			->addClass('port24-legend')
+			->setAttribute('style', '--port24-scale: '.$scale.'; --port24-legend-size: '.$legend_size.'px;')
+	);
 }
 
 $columns = max(1, (int) ($data['ports_per_row'] ?? 12));
