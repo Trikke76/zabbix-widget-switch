@@ -1,4 +1,5 @@
 (function() {
+
 	function getNumericValue(value) {
 		const text = String(value || '').trim();
 		return /^\d+$/.test(text) ? text : '';
@@ -269,6 +270,246 @@
 		firstFieldset.parentNode.insertBefore(panel, firstFieldset);
 	}
 
+	function findField(fieldName) {
+		const selectors = [
+			`input[name="${fieldName}"], select[name="${fieldName}"]`,
+			`input[name="fields[${fieldName}]"], select[name="fields[${fieldName}]"]`
+		];
+
+		for (const selector of selectors) {
+			const field = document.querySelector(selector);
+			if (field) {
+				return field;
+			}
+		}
+
+		return null;
+	}
+
+	function setSimpleFieldValue(fieldName, value) {
+		const field = findField(fieldName);
+		if (!field) {
+			return;
+		}
+		field.value = String(value);
+		field.dispatchEvent(new Event('input', {bubbles: true}));
+		field.dispatchEvent(new Event('change', {bubbles: true}));
+	}
+
+	function getConfiguredPortTotal() {
+		const rows = Math.max(1, Number(readIntField('row_count', '2')));
+		const perRow = Math.max(1, Number(readIntField('ports_per_row', '12')));
+		const sfp = Math.max(0, Number(readIntField('sfp_ports', '0')));
+		return Math.max(1, Math.min(256, (rows * perRow) + sfp));
+	}
+
+	function updatePortFieldsetVisibility() {
+		const visiblePorts = getConfiguredPortTotal();
+		for (const fieldset of document.querySelectorAll('fieldset.switch-port-fieldset[data-port-index]')) {
+			const idx = Number(fieldset.getAttribute('data-port-index') || '0');
+			fieldset.style.display = (idx > 0 && idx <= visiblePorts) ? '' : 'none';
+		}
+	}
+
+	function readIntField(fieldName, fallback) {
+		const field = findField(fieldName);
+		if (!field) {
+			return fallback;
+		}
+		const value = String(field.value || '').trim();
+		return /^\d+$/.test(value) ? value : fallback;
+	}
+
+	function buildProfilePreset(profileId) {
+		return {
+			row_count: readIntField(`profile${profileId}_row_count`, '2'),
+			ports_per_row: readIntField(`profile${profileId}_ports_per_row`, '12'),
+			sfp_ports: readIntField(`profile${profileId}_sfp_ports`, '0'),
+			switch_size: readIntField(`profile${profileId}_switch_size`, '100')
+		};
+	}
+
+	function getPresetMap() {
+		const map = {0: null};
+		for (let profileId = 1; profileId <= 7; profileId++) {
+			map[profileId] = buildProfilePreset(profileId);
+		}
+		return map;
+	}
+
+	function ensurePresetControls() {
+		const presetField = findField('preset');
+		if (!presetField || presetField.dataset.switchPresetInit === '1') {
+			return;
+		}
+
+		let lastPresetValue = String(presetField.value || '0');
+
+		const getProfileNameField = (presetId) => findField(`profile${presetId}_name`);
+
+		const ensureNameEditor = () => {
+			const row = presetField.closest('.form-field');
+			if (!row) {
+				return null;
+			}
+
+			let input = row.querySelector('.switch-profile-name');
+			if (input) {
+				return input;
+			}
+
+			const label = document.createElement('label');
+			label.textContent = 'Profile name';
+			label.style.marginLeft = '8px';
+			label.style.marginRight = '6px';
+			label.className = 'switch-profile-name-label';
+
+			input = document.createElement('input');
+			input.type = 'text';
+			input.className = 'switch-profile-name';
+			input.style.width = '170px';
+			input.style.verticalAlign = 'middle';
+			input.style.display = 'none';
+
+			input.addEventListener('input', () => {
+				const presetId = Number(presetField.value);
+				if (presetId < 1 || presetId > 7) {
+					return;
+				}
+
+				const hiddenField = getProfileNameField(presetId);
+				if (!hiddenField) {
+					return;
+				}
+
+				hiddenField.value = input.value;
+				hiddenField.dispatchEvent(new Event('input', {bubbles: true}));
+				hiddenField.dispatchEvent(new Event('change', {bubbles: true}));
+
+				const option = presetField.querySelector(`option[value="${presetId}"]`);
+				if (option) {
+					option.textContent = input.value.trim() !== '' ? input.value.trim() : `Profile ${presetId}`;
+				}
+			});
+
+			label.style.display = 'none';
+			row.appendChild(label);
+			row.appendChild(input);
+
+			return input;
+		};
+
+		const hideInternalProfileFields = () => {
+			const suffixes = ['_name', '_row_count', '_ports_per_row', '_sfp_ports', '_switch_size'];
+
+			for (let presetId = 1; presetId <= 7; presetId++) {
+				for (const suffix of suffixes) {
+					const forId = `profile${presetId}${suffix}`;
+					const label = document.querySelector(`label[for="${forId}"]`);
+					if (!label) {
+						continue;
+					}
+
+					label.style.display = 'none';
+
+					const field = label.nextElementSibling;
+					if (field && field.classList && field.classList.contains('form-field')) {
+						field.style.display = 'none';
+					}
+				}
+			}
+		};
+
+		const refreshNameEditor = () => {
+			const input = ensureNameEditor();
+			if (!input) {
+				return;
+			}
+
+			const label = input.previousElementSibling;
+			const presetId = Number(presetField.value);
+			if (presetId >= 1 && presetId <= 7) {
+				const nameField = getProfileNameField(presetId);
+				const currentName = nameField && String(nameField.value || '').trim() !== ''
+					? String(nameField.value).trim()
+					: `Profile ${presetId}`;
+
+				input.value = currentName;
+				input.style.display = '';
+				if (label) {
+					label.style.display = '';
+				}
+			}
+			else {
+				input.style.display = 'none';
+				if (label) {
+					label.style.display = 'none';
+				}
+			}
+		};
+
+		const addSaveButton = () => {
+			const row = presetField.closest('.form-field');
+			if (!row || row.querySelector('.switch-profile-save') !== null) {
+				return;
+			}
+
+			const button = document.createElement('button');
+			button.type = 'button';
+			button.className = 'btn-alt switch-profile-save';
+			button.textContent = 'Save current to selected profile';
+			button.style.marginLeft = '8px';
+
+			button.addEventListener('click', () => {
+				const presetId = Number(presetField.value);
+				if (presetId < 1 || presetId > 7) {
+					window.alert('Select a profile (1-7) first.');
+					return;
+				}
+
+				setSimpleFieldValue(`profile${presetId}_row_count`, readIntField('row_count', '2'));
+				setSimpleFieldValue(`profile${presetId}_ports_per_row`, readIntField('ports_per_row', '12'));
+				setSimpleFieldValue(`profile${presetId}_sfp_ports`, readIntField('sfp_ports', '0'));
+				setSimpleFieldValue(`profile${presetId}_switch_size`, readIntField('switch_size', '100'));
+			});
+
+			row.appendChild(button);
+		};
+
+		const applyPreset = () => {
+			const presetValue = String(presetField.value || '0');
+			const preset = getPresetMap()[presetValue] || null;
+			if (!preset) {
+				refreshNameEditor();
+				return;
+			}
+
+			setSimpleFieldValue('row_count', preset.row_count);
+			setSimpleFieldValue('ports_per_row', preset.ports_per_row);
+			setSimpleFieldValue('sfp_ports', preset.sfp_ports);
+			setSimpleFieldValue('switch_size', preset.switch_size);
+			updatePortFieldsetVisibility();
+			refreshNameEditor();
+		};
+
+		presetField.addEventListener('change', applyPreset);
+
+		presetField.dataset.switchPresetInit = '1';
+		addSaveButton();
+		hideInternalProfileFields();
+		refreshNameEditor();
+
+		window.switch_widget_apply_preset_if_changed = () => {
+			const current = String(presetField.value || '0');
+			if (current === lastPresetValue) {
+				return;
+			}
+
+			lastPresetValue = current;
+			applyPreset();
+		};
+	}
+
 	function ensureSelectForField(field) {
 		if (field.tagName === 'SELECT') {
 			return field;
@@ -443,6 +684,12 @@
 			let inFlight = false;
 
 			const refresh = () => {
+				ensurePresetControls();
+				if (typeof window.switch_widget_apply_preset_if_changed === 'function') {
+					window.switch_widget_apply_preset_if_changed();
+				}
+				updatePortFieldsetVisibility();
+
 				for (const field of getColorFields()) {
 					ensureColorPickerForField(field);
 				}

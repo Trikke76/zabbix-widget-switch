@@ -12,15 +12,53 @@ foreach (array_keys($data['fields']) as $field_name) {
 $form->addField(new CWidgetFieldMultiSelectGroupView($data['fields']['groupids']));
 $form->addField(new CWidgetFieldMultiSelectHostView($data['fields']['hostids']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['legend_text']));
+$form->addField(new CWidgetFieldSelectView($data['fields']['preset']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_brand']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_model']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_size']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['row_count']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['ports_per_row']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['sfp_ports']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile1_name']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile2_name']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile3_name']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile4_name']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile5_name']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile6_name']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile7_name']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile1_row_count']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile2_row_count']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile3_row_count']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile4_row_count']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile5_row_count']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile6_row_count']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile7_row_count']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile1_ports_per_row']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile2_ports_per_row']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile3_ports_per_row']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile4_ports_per_row']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile5_ports_per_row']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile6_ports_per_row']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile7_ports_per_row']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile1_sfp_ports']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile2_sfp_ports']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile3_sfp_ports']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile4_sfp_ports']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile5_sfp_ports']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile6_sfp_ports']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile7_sfp_ports']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile1_switch_size']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile2_switch_size']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile3_switch_size']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile4_switch_size']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile5_switch_size']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile6_switch_size']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile7_switch_size']));
 
 for ($i = 1; $i <= $port_count; $i++) {
-	$fieldset = new CWidgetFormFieldsetCollapsibleView(sprintf(_('Port %d'), $i));
+	$fieldset = (new CWidgetFormFieldsetCollapsibleView(sprintf(_('Port %d'), $i)))
+		->addClass('switch-port-fieldset')
+		->setAttribute('data-port-index', (string) $i);
 
 	$fieldset
 		->addField(new CWidgetFieldTextBoxView($data['fields']['port'.$i.'_name']))
