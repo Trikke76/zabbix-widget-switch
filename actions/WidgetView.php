@@ -18,6 +18,16 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$layout = $this->getLayout();
 		$ports = $this->loadPortsFromFields($layout['total_ports']);
 		$trigger_meta = $this->loadTriggerMeta($ports);
+		$widget_name = trim((string) $this->getInput('name', ''));
+		if ($widget_name === '') {
+			$widget_name = trim((string) ($this->fields_values['name'] ?? ''));
+		}
+		if ($widget_name === '' && method_exists($this->widget, 'getName')) {
+			$widget_name = trim((string) $this->widget->getName());
+		}
+		if ($widget_name === '') {
+			$widget_name = $this->widget->getDefaultName();
+		}
 		$sfp_start_index = max(1, $layout['total_ports'] - $layout['sfp_ports'] + 1);
 
 		foreach ($ports as $index => &$port) {
@@ -35,7 +45,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 		unset($port);
 
 			$this->setResponse(new CControllerResponseData([
-				'name' => $this->widget->getDefaultName(),
+				'name' => $widget_name,
 				'legend_text' => trim((string) ($this->fields_values['legend_text'] ?? '')),
 				'legend_size' => $this->clamp(
 					$this->extractPositiveInt($this->fields_values['legend_size'] ?? 14),

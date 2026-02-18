@@ -12,15 +12,16 @@ Uses native Zabbix selection fields.
 2. Select global `Host` (selection box style).
 3. Set `Rows` and `Ports per row` (total ports = rows x ports per row).
 4. Set optional `Brand` and `Model` text for switch bezel.
-5. Optional: set `Legend text` (leave empty to hide).
-6. Optional: select `Profile` to auto-fill layout (`Rows`, `Ports per row`, `SFP ports`, `Size (%)`, `Brand`, `Model`).
-7. Optional: rename profile directly next to `Profile`.
-8. Optional: use `Save current to selected profile` to overwrite selected profile (1-7).
-9. Set optional `Size (%)` (40-100) to make switch compact.
-10. Set optional `SFP ports` (0 = none, 2 = two extra SFP ports).
-11. Select per-port `Trigger` from dropdown (for selected host).
-12. Set default/trigger colors per port (with color picker).
-13. Optional: use `Bulk actions` to apply one default/trigger color to all ports.
+5. Set widget `Name` to control the dashboard widget title (header text).
+6. Optional: set `Legend text` (leave empty to hide).
+7. Optional: select `Profile` to auto-fill layout (`Rows`, `Ports per row`, `SFP ports`, `Size (%)`, `Brand`, `Model`).
+8. Optional: rename profile directly next to `Profile`.
+9. Optional: use `Save current to selected profile` to overwrite selected profile (1-7).
+10. Set optional `Size (%)` (40-100) to make switch compact.
+11. Set optional `SFP ports` (0 = none, 2 = two extra SFP ports).
+12. Select per-port `Trigger` from dropdown (for selected host).
+13. Set default/trigger colors per port (with color picker).
+14. Optional: use `Bulk actions` to apply one default/trigger color to all ports.
 
 Note: Trigger options are rendered server-side from selected host.
 If you change host, reopen widget edit to refresh trigger lists.
@@ -28,6 +29,7 @@ If you change host, reopen widget edit to refresh trigger lists.
 ## UI
 
 - Widget renders with switch-style port front panel.
+- Widget header title uses the widget `Name` field.
 - Port status uses LED-like color indicator:
   - default color = normal
   - trigger color = active problem
