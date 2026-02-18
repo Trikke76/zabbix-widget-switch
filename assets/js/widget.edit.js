@@ -507,7 +507,9 @@
 			row_count: readIntField(`profile${profileId}_row_count`, '2'),
 			ports_per_row: readIntField(`profile${profileId}_ports_per_row`, '12'),
 			sfp_ports: readIntField(`profile${profileId}_sfp_ports`, '0'),
-			switch_size: readIntField(`profile${profileId}_switch_size`, '100')
+			switch_size: readIntField(`profile${profileId}_switch_size`, '100'),
+			switch_brand: (findField(`profile${profileId}_switch_brand`)?.value || 'NETSWITCH').toString(),
+			switch_model: (findField(`profile${profileId}_switch_model`)?.value || 'SW-24G').toString()
 		};
 	}
 
@@ -528,6 +530,151 @@
 		let lastPresetValue = String(presetField.value || '0');
 
 		const getProfileNameField = (presetId) => findField(`profile${presetId}_name`);
+		const getProfileField = (presetId, suffix) => findField(`profile${presetId}${suffix}`);
+		const updatePresetOptionLabel = (presetId, name) => {
+			const labelText = name && name.trim() !== '' ? name.trim() : `Profile ${presetId}`;
+			const option = presetField.querySelector(`option[value="${presetId}"]`);
+			if (option) {
+				option.textContent = labelText;
+				option.label = labelText;
+
+				// Force select UI refresh in browsers/widgets that cache option labels.
+				const replacement = new Option(labelText, option.value, false, option.selected);
+				replacement.label = labelText;
+				if (option.selected) {
+					replacement.selected = true;
+				}
+				presetField.replaceChild(replacement, option);
+				if (presetField.value !== String(presetId)) {
+					presetField.value = String(presetId);
+				}
+			}
+		};
+		const refreshPresetSelectUi = () => {
+			const currentValue = String(presetField.value || '0');
+			// Force repaint of native/select-enhanced controls.
+			presetField.value = '0';
+			presetField.value = currentValue;
+			presetField.dispatchEvent(new Event('input', {bubbles: true}));
+			if (window.jQuery) {
+				window.jQuery(presetField).trigger('change.select2').trigger('change');
+			}
+		};
+		const persistProfiles = () => {};
+		const applyStoredProfiles = () => {};
+		const syncSelectedProfileName = () => {
+			const presetId = Number(presetField.value);
+			if (presetId < 1 || presetId > 7) {
+				return;
+			}
+
+			const input = document.querySelector('.switch-profile-name');
+			if (!input) {
+				return;
+			}
+
+			const nameValue = String(input.value || '').trim();
+			const hiddenField = getProfileNameField(presetId);
+			if (hiddenField) {
+				hiddenField.value = nameValue !== '' ? nameValue : `Profile ${presetId}`;
+				hiddenField.dispatchEvent(new Event('input', {bubbles: true}));
+				hiddenField.dispatchEvent(new Event('change', {bubbles: true}));
+			}
+			updatePresetOptionLabel(presetId, nameValue);
+			refreshPresetSelectUi();
+		};
+		const saveProfileToFile = (presetId) => {
+			const nameField = getProfileNameField(presetId);
+			const body = new URLSearchParams();
+			body.set('preset_id', String(presetId));
+			body.set('name', String(nameField ? nameField.value || '' : `Profile ${presetId}`));
+			body.set('row_count', readIntField(`profile${presetId}_row_count`, '2'));
+				body.set('ports_per_row', readIntField(`profile${presetId}_ports_per_row`, '12'));
+				body.set('sfp_ports', readIntField(`profile${presetId}_sfp_ports`, '0'));
+				body.set('switch_size', readIntField(`profile${presetId}_switch_size`, '100'));
+				body.set('switch_brand', (findField(`profile${presetId}_switch_brand`)?.value || '').toString());
+				body.set('switch_model', (findField(`profile${presetId}_switch_model`)?.value || '').toString());
+
+			const url = new URL(window.location.href);
+			url.search = '';
+			url.searchParams.set('action', 'widget.switch.profiles.save');
+			url.searchParams.set('output', 'ajax');
+
+			return fetch(url.toString(), {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
+				body: body.toString()
+			})
+				.then((response) => response.text())
+				.then((text) => {
+					const parsePayload = (raw) => {
+						const parsed = JSON.parse(raw);
+						if (parsed && Object.prototype.hasOwnProperty.call(parsed, 'saved')) {
+							return parsed;
+						}
+						if (parsed && parsed.main_block) {
+							const nested = JSON.parse(parsed.main_block);
+							if (nested && Object.prototype.hasOwnProperty.call(nested, 'saved')) {
+								return nested;
+							}
+						}
+						return null;
+					};
+
+					try {
+						const parsed = parsePayload(text);
+						if (parsed !== null) {
+							return parsed;
+						}
+					}
+					catch (error) {}
+
+					const start = text.indexOf('{"saved"');
+					if (start !== -1) {
+						try {
+							let depth = 0;
+							let inString = false;
+							let escaped = false;
+							for (let i = start; i < text.length; i++) {
+								const ch = text[i];
+								if (escaped) {
+									escaped = false;
+									continue;
+								}
+								if (ch === '\\') {
+									escaped = true;
+									continue;
+								}
+								if (ch === '"') {
+									inString = !inString;
+									continue;
+								}
+								if (inString) {
+									continue;
+								}
+								if (ch === '{') {
+									depth++;
+								}
+								else if (ch === '}') {
+									depth--;
+									if (depth === 0) {
+										const embedded = text.slice(start, i + 1);
+										const parsed = parsePayload(embedded);
+										if (parsed !== null) {
+											return parsed;
+										}
+										break;
+									}
+								}
+							}
+						}
+						catch (error) {}
+					}
+
+					return {saved: false, error: 'Unexpected server response while saving profile.'};
+				});
+		};
 
 		const ensureNameEditor = () => {
 			const row = presetField.closest('.form-field');
@@ -558,20 +705,7 @@
 				if (presetId < 1 || presetId > 7) {
 					return;
 				}
-
-				const hiddenField = getProfileNameField(presetId);
-				if (!hiddenField) {
-					return;
-				}
-
-				hiddenField.value = input.value;
-				hiddenField.dispatchEvent(new Event('input', {bubbles: true}));
-				hiddenField.dispatchEvent(new Event('change', {bubbles: true}));
-
-				const option = presetField.querySelector(`option[value="${presetId}"]`);
-				if (option) {
-					option.textContent = input.value.trim() !== '' ? input.value.trim() : `Profile ${presetId}`;
-				}
+				// Do not write profile fields on typing; commit only on explicit save button.
 			});
 
 			label.style.display = 'none';
@@ -582,7 +716,7 @@
 		};
 
 		const hideInternalProfileFields = () => {
-			const suffixes = ['_name', '_row_count', '_ports_per_row', '_sfp_ports', '_switch_size'];
+			const suffixes = ['_name', '_row_count', '_ports_per_row', '_sfp_ports', '_switch_size', '_switch_brand', '_switch_model'];
 
 			for (let presetId = 1; presetId <= 7; presetId++) {
 				for (const suffix of suffixes) {
@@ -649,11 +783,25 @@
 					return;
 				}
 
-				setSimpleFieldValue(`profile${presetId}_row_count`, readIntField('row_count', '2'));
-				setSimpleFieldValue(`profile${presetId}_ports_per_row`, readIntField('ports_per_row', '12'));
-				setSimpleFieldValue(`profile${presetId}_sfp_ports`, readIntField('sfp_ports', '0'));
-				setSimpleFieldValue(`profile${presetId}_switch_size`, readIntField('switch_size', '100'));
-			});
+					setSimpleFieldValue(`profile${presetId}_row_count`, readIntField('row_count', '2'));
+					setSimpleFieldValue(`profile${presetId}_ports_per_row`, readIntField('ports_per_row', '12'));
+					setSimpleFieldValue(`profile${presetId}_sfp_ports`, readIntField('sfp_ports', '0'));
+					setSimpleFieldValue(`profile${presetId}_switch_size`, readIntField('switch_size', '100'));
+					setSimpleFieldValue(`profile${presetId}_switch_brand`, (findField('switch_brand')?.value || 'NETSWITCH').toString());
+					setSimpleFieldValue(`profile${presetId}_switch_model`, (findField('switch_model')?.value || 'SW-24G').toString());
+						syncSelectedProfileName();
+						persistProfiles();
+						refreshNameEditor();
+					applyPreset();
+					saveProfileToFile(presetId).then((payload) => {
+						if (!payload || payload.saved !== true) {
+							const message = payload && payload.error ? payload.error : 'Profile save failed.';
+							window.alert(message);
+						}
+					}).catch(() => {
+						window.alert('Profile save failed.');
+					});
+				});
 
 			row.appendChild(button);
 		};
@@ -667,18 +815,22 @@
 			}
 
 			setSimpleFieldValue('row_count', preset.row_count);
-			setSimpleFieldValue('ports_per_row', preset.ports_per_row);
-			setSimpleFieldValue('sfp_ports', preset.sfp_ports);
-			setSimpleFieldValue('switch_size', preset.switch_size);
-			updatePortFieldsetVisibility();
-			refreshNameEditor();
-		};
+				setSimpleFieldValue('ports_per_row', preset.ports_per_row);
+				setSimpleFieldValue('sfp_ports', preset.sfp_ports);
+				setSimpleFieldValue('switch_size', preset.switch_size);
+				setSimpleFieldValue('switch_brand', preset.switch_brand);
+				setSimpleFieldValue('switch_model', preset.switch_model);
+				updatePortFieldsetVisibility();
+				refreshNameEditor();
+			};
 
 		presetField.addEventListener('change', applyPreset);
 
 		presetField.dataset.switchPresetInit = '1';
 		addSaveButton();
 		hideInternalProfileFields();
+		applyStoredProfiles();
+		applyPreset();
 		refreshNameEditor();
 
 		window.switch_widget_apply_preset_if_changed = () => {

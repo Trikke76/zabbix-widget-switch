@@ -13,7 +13,7 @@ Uses native Zabbix selection fields.
 3. Set `Rows` and `Ports per row` (total ports = rows x ports per row).
 4. Set optional `Brand` and `Model` text for switch bezel.
 5. Optional: set `Legend text` (leave empty to hide).
-6. Optional: select `Profile` to auto-fill layout (`Rows`, `Ports per row`, `SFP ports`, `Size (%)`).
+6. Optional: select `Profile` to auto-fill layout (`Rows`, `Ports per row`, `SFP ports`, `Size (%)`, `Brand`, `Model`).
 7. Optional: rename profile directly next to `Profile`.
 8. Optional: use `Save current to selected profile` to overwrite selected profile (1-7).
 9. Set optional `Size (%)` (40-100) to make switch compact.
@@ -31,3 +31,23 @@ If you change host, reopen widget edit to refresh trigger lists.
 - Port status uses LED-like color indicator:
   - default color = normal
   - trigger color = active problem
+
+## Profile Storage Permissions
+
+Profiles are stored in `profiles.json` inside the module directory.  
+The web/PHP user must be able to write this file when using `Save current to selected profile`.
+
+Example (RHEL/Alma/Rocky with `apache`):
+
+```bash
+sudo chown root:apache /usr/share/zabbix/modules/switch/profiles.json
+sudo chmod 664 /usr/share/zabbix/modules/switch/profiles.json
+sudo chmod 755 /usr/share/zabbix/modules/switch
+```
+
+If SELinux is enabled, also set writable context:
+
+```bash
+sudo semanage fcontext -a -t httpd_sys_rw_content_t "/usr/share/zabbix/modules/switch/profiles.json"
+sudo restorecon -v /usr/share/zabbix/modules/switch/profiles.json
+```

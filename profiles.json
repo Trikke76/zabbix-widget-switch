@@ -1,0 +1,65 @@
+{
+  "1": {
+    "name": "Access 24",
+    "row_count": 2,
+    "ports_per_row": 12,
+    "sfp_ports": 2,
+    "switch_size": 90,
+    "switch_brand": "NETSWITCH",
+    "switch_model": "SW-24G"
+  },
+  "2": {
+    "name": "Access 48",
+    "row_count": 4,
+    "ports_per_row": 12,
+    "sfp_ports": 4,
+    "switch_size": 85,
+    "switch_brand": "NETSWITCH",
+    "switch_model": "SW-24G"
+  },
+  "3": {
+    "name": "Core 48",
+    "row_count": 2,
+    "ports_per_row": 24,
+    "sfp_ports": 4,
+    "switch_size": 80,
+    "switch_brand": "NETSWITCH",
+    "switch_model": "SW-24G"
+  },
+  "4": {
+    "name": "Compact 12",
+    "row_count": 2,
+    "ports_per_row": 6,
+    "sfp_ports": 2,
+    "switch_size": 70,
+    "switch_brand": "NETSWITCH",
+    "switch_model": "SW-24G"
+  },
+  "5": {
+    "name": "User profile 1",
+    "row_count": 2,
+    "ports_per_row": 12,
+    "sfp_ports": 0,
+    "switch_size": 100,
+    "switch_brand": "NETSWITCH",
+    "switch_model": "SW-24G"
+  },
+  "6": {
+    "name": "User profile 2",
+    "row_count": 2,
+    "ports_per_row": 12,
+    "sfp_ports": 0,
+    "switch_size": 100,
+    "switch_brand": "NETSWITCH",
+    "switch_model": "SW-24G"
+  },
+  "7": {
+    "name": "User profile 3",
+    "row_count": 2,
+    "ports_per_row": 12,
+    "sfp_ports": 0,
+    "switch_size": 100,
+    "switch_brand": "NETSWITCH",
+    "switch_model": "SW-24G"
+  }
+}

@@ -55,6 +55,20 @@ $form->addField(new CWidgetFieldTextBoxView($data['fields']['profile4_switch_siz
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['profile5_switch_size']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['profile6_switch_size']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['profile7_switch_size']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile1_switch_brand']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile2_switch_brand']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile3_switch_brand']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile4_switch_brand']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile5_switch_brand']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile6_switch_brand']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile7_switch_brand']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile1_switch_model']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile2_switch_model']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile3_switch_model']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile4_switch_model']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile5_switch_model']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile6_switch_model']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['profile7_switch_model']));
 
 for ($i = 1; $i <= $port_count; $i++) {
 	$fieldset = (new CWidgetFormFieldsetCollapsibleView(sprintf(_('Port %d'), $i)))
