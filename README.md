@@ -42,27 +42,10 @@ If you change host, reopen widget edit to refresh trigger lists.
   - state/type/trigger text
   - IN/OUT sparkline + latest value (when user has item read permission)
 
-## Release Notes 1.0.7
+## Release Notes 1.0.9
 
-- Security hardening: widget now validates host access server-side.
-- If selected host is not accessible for current user, widget shows access denied message instead of rendering port data.
-- Trigger state handling tightened to avoid false OK colors when trigger metadata is not accessible.
-
-## Release Notes 1.0.8
-
-- Added per-port traffic sparklines in tooltip (IN/OUT).
-- Added utilization heatmap support with:
-  - `Speed item pattern`
-  - `Low`, `Warn`, `High` thresholds
-  - configurable heatmap colors (`low`, `warn`, `high`, `n/a`)
-  - optional overlay toggle
-- Added heatmap grid below switch with per-port utilization percentage.
-- Updated SFP connector visuals.
-- Improved edit UI:
-  - compact threshold/color inputs
-  - modern color picker for utilization colors
-  - consistent pattern field sizing
-  - dynamic build label from `manifest.json`.
+- Added per-port `24h state` mini timeline bar in tooltip (OK/problem history).
+- Updated utilization heatmap behavior and defaults.
 
 ## Profile Storage Permissions
 
@@ -83,3 +66,7 @@ If SELinux is enabled, also set writable context:
 sudo semanage fcontext -a -t httpd_sys_rw_content_t "/usr/share/zabbix/modules/switch/profiles.json"
 sudo restorecon -v /usr/share/zabbix/modules/switch/profiles.json
 ```
+
+---
+
+Parts of this software were generated using Codex. We do not guarantee the total accuracy, security, or stability of the generated code.

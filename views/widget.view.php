@@ -46,9 +46,16 @@ $css = implode('', [
 	'.port24-tooltip{position:fixed;z-index:100000;pointer-events:none;min-width:190px;background:#0f1722;color:#d9e3ee;border:1px solid #2e3c4d;border-radius:8px;padding:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);font-size:11px;line-height:1.3;display:none;}',
 	'.port24-tooltip-title{font-weight:700;margin-bottom:6px;color:#f8fbff;}',
 	'.port24-tip-meta{margin:2px 0;opacity:.95;}',
-	'.port24-tip-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0;}',
+	'.port24-tip-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0;order:20;}',
 	'.port24-tip-label{opacity:.9;min-width:24px;}',
 	'.port24-tip-value{opacity:.95;font-variant-numeric:tabular-nums;}',
+	'.port24-tip-state-row{margin:6px 0 4px 0;order:30;}',
+	'.port24-tip-state-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}',
+	'.port24-tip-state-title{font-size:10px;opacity:.9;letter-spacing:.03em;}',
+	'.port24-tip-state-grid{display:grid;grid-template-columns:repeat(48,1fr);gap:1px;height:8px;background:#1b2430;padding:1px;border-radius:2px;}',
+	'.port24-tip-state-seg{display:block;border-radius:1px;background:#64748B;}',
+	'.port24-tip-state-seg.ok{background:#22C55E;}',
+	'.port24-tip-state-seg.problem{background:#EF4444;}',
 		'.port24-tip-svg{display:block;width:120px;height:26px;background:#0a1119;border:1px solid #223041;border-radius:4px;overflow:hidden;}',
 		'.port24-tip-area-in{fill:rgba(56,189,248,0.35);}',
 		'.port24-tip-area-out{fill:rgba(245,158,11,0.30);}',
@@ -56,7 +63,7 @@ $css = implode('', [
 		'.port24-tip-path-out{fill:none;stroke:#ffb020;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}',
 		'.port24-tip-dot{fill:#334155;stroke:#dbeafe;stroke-width:1.1;}',
 	'.port24-card-wrap:hover .port24-hover-tip{display:block;}',
-	'.port24-hover-tip{position:absolute;z-index:40;left:calc(14px * var(--port24-scale));top:calc(42px * var(--port24-scale));min-width:200px;max-width:300px;background:#0f1722;color:#d9e3ee;border:1px solid #2e3c4d;border-radius:8px;padding:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);font-size:11px;line-height:1.3;display:none;pointer-events:none;}',
+	'.port24-hover-tip{position:absolute;z-index:40;left:calc(14px * var(--port24-scale));top:calc(42px * var(--port24-scale));min-width:200px;max-width:300px;background:#0f1722;color:#d9e3ee;border:1px solid #2e3c4d;border-radius:8px;padding:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);font-size:11px;line-height:1.3;display:none;pointer-events:none;flex-direction:column;}',
 	'.port24-util-grid-wrap{margin-top:10px;}',
 	'.port24-util-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:4px;}',
 	'.port24-util-cell{border:1px solid rgba(15,23,34,.28);border-radius:3px;padding:4px 3px;text-align:center;font-size:10px;line-height:1.2;color:#0f1722;}',
@@ -224,6 +231,7 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 
 	$in_series = is_array($port['traffic_in_series'] ?? null) ? $port['traffic_in_series'] : [];
 	$out_series = is_array($port['traffic_out_series'] ?? null) ? $port['traffic_out_series'] : [];
+	$state_24h = is_array($port['state_24h'] ?? null) ? $port['state_24h'] : [];
 		$in_geom = $spark_geom($in_series);
 		$out_geom = $spark_geom($out_series);
 
@@ -324,6 +332,40 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 					->addItem((new CSpan('OUT'))->addClass('port24-tip-label'))
 					->addItem($make_spark_svg($out_geom, 'port24-tip-path-out', 'port24-tip-area-out'))
 					->addItem((new CSpan($fmt_last($out_series)))->addClass('port24-tip-value'))
+			)
+			->addItem(
+				(new CDiv())
+					->addClass('port24-tip-state-row')
+					->addItem(
+						(new CDiv())
+							->addClass('port24-tip-state-head')
+							->addItem((new CSpan('24h state'))->addClass('port24-tip-state-title'))
+							->addItem((new CSpan('now'))->addClass('port24-tip-state-title'))
+					)
+					->addItem(
+						(new CDiv(
+							(function(array $segments): CDiv {
+								$grid = (new CDiv())->addClass('port24-tip-state-grid');
+								if ($segments === []) {
+									$segments = array_fill(0, 48, -1);
+								}
+
+								foreach ($segments as $state) {
+									$class = 'port24-tip-state-seg';
+									if ((int) $state === 1) {
+										$class .= ' problem';
+									}
+									elseif ((int) $state === 0) {
+										$class .= ' ok';
+									}
+
+									$grid->addItem((new CSpan())->addClass($class));
+								}
+
+								return $grid;
+							})($state_24h)
+						))
+					)
 			);
 
 	if ($port['url'] !== '') {

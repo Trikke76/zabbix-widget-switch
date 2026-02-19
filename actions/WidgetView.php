@@ -15,6 +15,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 	private const MAX_SPEED_PATTERN_LENGTH = 30;
 	private const TRAFFIC_POINTS = 24;
 	private const TRAFFIC_LOOKBACK_SECONDS = 1800;
+	private const STATE_BAR_WINDOW_SECONDS = 86400;
+	private const STATE_BAR_BUCKETS = 48;
 	private const MAX_ROW_COUNT = 24;
 	private const MAX_PORTS_PER_ROW = 48;
 	private const MAX_SFP_PORTS = 32;
@@ -143,6 +145,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 			static fn(array $port): string => (string) ($port['speed_item_key_alt'] ?? ''),
 			$ports
 		), static fn(string $key): bool => $key !== ''))));
+		$state_bars = $this->loadTriggerStateBars($ports, $trigger_meta);
 
 		foreach ($ports as &$port) {
 			$port['traffic_in_series'] = $traffic_series[$port['traffic_in_item_key']] ?? [];
@@ -190,6 +193,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 			else {
 				$port['active_color'] = $port['trigger_ok_color'];
 			}
+			$port['state_24h'] = $state_bars[$port['triggerid']] ?? [];
 		}
 		unset($port);
 
@@ -512,6 +516,92 @@ class WidgetView extends CControllerDashboardWidgetView {
 		}
 
 		return $result;
+	}
+
+	private function loadTriggerStateBars(array $ports, array $trigger_meta): array {
+		$triggerids = [];
+		foreach ($ports as $port) {
+			if (!empty($port['triggerid']) && isset($trigger_meta[$port['triggerid']])) {
+				$triggerids[] = (string) $port['triggerid'];
+			}
+		}
+		$triggerids = array_values(array_unique($triggerids));
+		if ($triggerids === []) {
+			return [];
+		}
+
+		$time_to = time();
+		$time_from = $time_to - self::STATE_BAR_WINDOW_SECONDS;
+		$bucket_count = self::STATE_BAR_BUCKETS;
+		$bucket_span = self::STATE_BAR_WINDOW_SECONDS / $bucket_count;
+
+		$events = API::Event()->get([
+			'output' => ['eventid', 'objectid', 'clock', 'value'],
+			'source' => 0,
+			'object' => 0,
+			'objectids' => $triggerids,
+			'time_from' => $time_from,
+			'time_till' => $time_to,
+			'sortfield' => ['clock', 'eventid'],
+			'sortorder' => ZBX_SORT_DOWN
+		]);
+
+		$by_trigger = [];
+		foreach ($events as $event) {
+			$triggerid = (string) ($event['objectid'] ?? '');
+			if ($triggerid === '') {
+				continue;
+			}
+			$by_trigger[$triggerid][] = [
+				'clock' => (int) ($event['clock'] ?? 0),
+				'value' => (int) ($event['value'] ?? 0)
+			];
+		}
+
+		$bars = [];
+		foreach ($triggerids as $triggerid) {
+			$current_state = !empty($trigger_meta[$triggerid]['is_problem']) ? 1 : 0;
+			$buckets = array_fill(0, $bucket_count, $current_state);
+			$cursor = $time_to;
+			$trigger_events = $by_trigger[$triggerid] ?? [];
+
+			foreach ($trigger_events as $event) {
+				$event_time = max($time_from, min($time_to, (int) $event['clock']));
+				if ($event_time >= $cursor) {
+					continue;
+				}
+
+				$this->fillStateBuckets($buckets, $time_from, $bucket_span, $event_time, $cursor, $current_state);
+
+				// Walk backward in time: invert event transition to estimate prior state.
+				$current_state = ((int) $event['value'] === 1) ? 0 : 1;
+				$cursor = $event_time;
+			}
+
+			if ($cursor > $time_from) {
+				$this->fillStateBuckets($buckets, $time_from, $bucket_span, $time_from, $cursor, $current_state);
+			}
+
+			$bars[$triggerid] = $buckets;
+		}
+
+		return $bars;
+	}
+
+	private function fillStateBuckets(array &$buckets, int $time_from, float $bucket_span, int $start_ts, int $end_ts, int $state): void {
+		if ($end_ts <= $start_ts || $bucket_span <= 0) {
+			return;
+		}
+
+		$start_idx = (int) floor(($start_ts - $time_from) / $bucket_span);
+		$end_idx = (int) ceil(($end_ts - $time_from) / $bucket_span) - 1;
+		$last_idx = count($buckets) - 1;
+		$start_idx = max(0, min($last_idx, $start_idx));
+		$end_idx = max(0, min($last_idx, $end_idx));
+
+		for ($i = $start_idx; $i <= $end_idx; $i++) {
+			$buckets[$i] = $state;
+		}
 	}
 
 	private function toFloat($value): float {
