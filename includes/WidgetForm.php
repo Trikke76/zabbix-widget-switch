@@ -10,6 +10,8 @@ use Zabbix\Widgets\Fields\CWidgetFieldTextBox;
 class WidgetForm extends CWidgetForm {
 	private const DEFAULT_ROW_COUNT = 2;
 	private const DEFAULT_PORTS_PER_ROW = 12;
+	private const DEFAULT_TRAFFIC_IN_PATTERN = 'ifInOctets[*]';
+	private const DEFAULT_TRAFFIC_OUT_PATTERN = 'ifOutOctets[*]';
 	private const MAX_ROW_COUNT = 24;
 	private const MAX_PORTS_PER_ROW = 48;
 	private const MAX_SFP_PORTS = 32;
@@ -27,6 +29,14 @@ class WidgetForm extends CWidgetForm {
 		$this->addField(
 			(new CWidgetFieldTextBox('legend_text', _('Legend text')))
 				->setDefault('')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('traffic_in_item_pattern', _('Traffic in item pattern')))
+				->setDefault(self::DEFAULT_TRAFFIC_IN_PATTERN)
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('traffic_out_item_pattern', _('Traffic out item pattern')))
+				->setDefault(self::DEFAULT_TRAFFIC_OUT_PATTERN)
 		);
 		$this->addField(
 			(new CWidgetFieldSelect('legend_size', _('Legend size'), [

@@ -9,12 +9,19 @@ use CControllerResponseData;
 class WidgetView extends CControllerDashboardWidgetView {
 	private const DEFAULT_ROW_COUNT = 2;
 	private const DEFAULT_PORTS_PER_ROW = 12;
+	private const DEFAULT_TRAFFIC_IN_PATTERN = 'ifInOctets[*]';
+	private const DEFAULT_TRAFFIC_OUT_PATTERN = 'ifOutOctets[*]';
+	private const TRAFFIC_POINTS = 24;
+	private const TRAFFIC_LOOKBACK_SECONDS = 1800;
 	private const MAX_ROW_COUNT = 24;
 	private const MAX_PORTS_PER_ROW = 48;
 	private const MAX_SFP_PORTS = 32;
 	private const MAX_TOTAL_PORTS = 96;
 	protected function doAction(): void {
 		$layout = $this->getLayout();
+		$hostid = $this->extractHostId();
+		$traffic_in_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['traffic_in_item_pattern'] ?? self::DEFAULT_TRAFFIC_IN_PATTERN), self::DEFAULT_TRAFFIC_IN_PATTERN);
+		$traffic_out_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['traffic_out_item_pattern'] ?? self::DEFAULT_TRAFFIC_OUT_PATTERN), self::DEFAULT_TRAFFIC_OUT_PATTERN);
 		$ports = $this->loadPortsFromFields($layout['total_ports']);
 		$trigger_meta = $this->loadTriggerMeta($ports);
 		$widget_name = trim((string) $this->getInput('name', ''));
@@ -50,12 +57,24 @@ class WidgetView extends CControllerDashboardWidgetView {
 				: '';
 			$port['trigger_name'] = $meta !== null ? $meta['description'] : '';
 			$port['is_sfp'] = ($layout['sfp_ports'] > 0 && ($index + 1) >= $sfp_start_index);
+			$port['hostid'] = $hostid;
+			$port['traffic_in_item_key'] = $this->resolvePortItemKey($traffic_in_pattern, $index + 1);
+			$port['traffic_out_item_key'] = $this->resolvePortItemKey($traffic_out_pattern, $index + 1);
+		}
+		unset($port);
+		$traffic_series = $this->loadTrafficSeries($hostid, $ports);
+		foreach ($ports as &$port) {
+			$port['traffic_in_series'] = $traffic_series[$port['traffic_in_item_key']] ?? [];
+			$port['traffic_out_series'] = $traffic_series[$port['traffic_out_item_key']] ?? [];
 		}
 		unset($port);
 
 			$this->setResponse(new CControllerResponseData([
 				'name' => $widget_name,
 				'legend_text' => trim((string) ($this->fields_values['legend_text'] ?? '')),
+				'traffic_in_item_pattern' => $traffic_in_pattern,
+				'traffic_out_item_pattern' => $traffic_out_pattern,
+				'hostid' => $hostid,
 				'legend_size' => $this->clamp(
 					$this->extractPositiveInt($this->fields_values['legend_size'] ?? 14),
 					12,
@@ -201,5 +220,118 @@ class WidgetView extends CControllerDashboardWidgetView {
 
 	private function clamp(int $value, int $min, int $max): int {
 		return max($min, min($max, $value));
+	}
+
+	private function sanitizeItemPattern(string $value, string $fallback): string {
+		$value = trim($value);
+		if ($value === '') {
+			return $fallback;
+		}
+
+		return substr($value, 0, 255);
+	}
+
+	private function resolvePortItemKey(string $pattern, int $port_index): string {
+		if (strpos($pattern, '*') !== false) {
+			return str_replace('*', (string) $port_index, $pattern);
+		}
+
+		return $pattern;
+	}
+
+	private function loadTrafficSeries(string $hostid, array $ports): array {
+		if ($hostid === '') {
+			return [];
+		}
+
+		$keys = [];
+		foreach ($ports as $port) {
+			if (!empty($port['traffic_in_item_key'])) {
+				$keys[] = (string) $port['traffic_in_item_key'];
+			}
+			if (!empty($port['traffic_out_item_key'])) {
+				$keys[] = (string) $port['traffic_out_item_key'];
+			}
+		}
+		$keys = array_values(array_unique(array_filter($keys, static fn(string $k): bool => $k !== '')));
+		if ($keys === []) {
+			return [];
+		}
+
+		$rows = API::Item()->get([
+			'output' => ['itemid', 'key_', 'value_type'],
+			'hostids' => [$hostid],
+			'filter' => ['key_' => $keys]
+		]);
+
+		$result = [];
+		foreach ($rows as $row) {
+			$key = (string) $row['key_'];
+			$value_type = (int) $row['value_type'];
+			if (!in_array($value_type, [0, 3], true)) {
+				continue;
+			}
+
+			$history = API::History()->get([
+				'output' => ['clock', 'value'],
+				'itemids' => [(string) $row['itemid']],
+				'history' => $value_type,
+				'time_from' => time() - self::TRAFFIC_LOOKBACK_SECONDS,
+				'sortfield' => 'clock',
+				'sortorder' => 'DESC',
+				'limit' => self::TRAFFIC_POINTS
+			]);
+
+			if (!is_array($history) || $history === []) {
+				$result[$key] = [];
+				continue;
+			}
+
+			$history = array_reverse($history);
+			$series = [];
+			foreach ($history as $point) {
+				$series[] = (float) $point['value'];
+			}
+			$result[$key] = $series;
+		}
+
+		return $result;
+	}
+
+	private function extractHostId(): string {
+		$value = $this->fields_values['hostids'] ?? [];
+		$candidates = $this->collectPositiveNumericScalars($value);
+		return $candidates !== [] ? (string) $candidates[0] : '';
+	}
+
+	private function collectPositiveNumericScalars($value): array {
+		$result = [];
+		$stack = [$value];
+
+		while ($stack !== []) {
+			$current = array_pop($stack);
+
+			if (is_array($current)) {
+				foreach ($current as $k => $v) {
+					if (is_scalar($k)) {
+						$key = trim((string) $k);
+						if (ctype_digit($key) && (int) $key > 0) {
+							$result[] = $key;
+						}
+					}
+					$stack[] = $v;
+				}
+				continue;
+			}
+
+			if (is_scalar($current)) {
+				$text = trim((string) $current);
+				if (ctype_digit($text) && (int) $text > 0) {
+					$result[] = $text;
+				}
+			}
+		}
+
+		return array_values(array_unique($result));
 	}
 }

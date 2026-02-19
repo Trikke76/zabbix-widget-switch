@@ -11,6 +11,8 @@ foreach (array_keys($data['fields']) as $field_name) {
 
 $form->addField(new CWidgetFieldMultiSelectHostView($data['fields']['hostids']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['legend_text']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['traffic_in_item_pattern']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['traffic_out_item_pattern']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['legend_size']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['preset']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_brand']));

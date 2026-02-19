@@ -4,7 +4,7 @@ $css = implode('', [
 	'.port24-legend{display:inline-block;font-size:calc(var(--port24-legend-size,14px) * var(--port24-scale));line-height:1.35;color:#4b5563;',
 	'background:linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);border:1px solid #d7dee8;border-radius:6px;',
 	'padding:calc(6px * var(--port24-scale)) calc(10px * var(--port24-scale));margin-bottom:calc(10px * var(--port24-scale));}',
-	'.port24-switch{background:linear-gradient(180deg,#5a6571 0%,#3d4651 22%,#2b323b 100%);',
+	'.port24-switch{position:relative;background:linear-gradient(180deg,#5a6571 0%,#3d4651 22%,#2b323b 100%);',
 	'border:1px solid #212831;border-radius:10px;padding:calc(14px * var(--port24-scale));box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 16px rgba(0,0,0,.25);}',
 	'.port24-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:calc(8px * var(--port24-scale));color:#cfd8e2;font-size:calc(10px * var(--port24-scale));letter-spacing:.08em;text-transform:uppercase;}',
 	'.port24-brand{font-weight:700;}',
@@ -36,7 +36,18 @@ $css = implode('', [
 	'height:calc(3px * var(--port24-scale));background:#8a96a5;border-radius:1px;opacity:.85;}',
 	'.port24-led{position:absolute;right:calc(4px * var(--port24-scale));top:calc(4px * var(--port24-scale));width:calc(8px * var(--port24-scale));height:calc(8px * var(--port24-scale));border-radius:50%;background:var(--port-color,#2F855A);',
 	'box-shadow:0 0 0 1px rgba(255,255,255,.2),0 0 calc(12px * var(--port24-scale)) var(--port-color,#2F855A),0 0 calc(20px * var(--port24-scale)) var(--port-color,#2F855A);}',
-	'.port24-label{position:absolute;left:calc(4px * var(--port24-scale));right:calc(4px * var(--port24-scale));bottom:calc(2px * var(--port24-scale));text-align:center;font-size:calc(9px * var(--port24-scale));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#c9d3de;}'
+	'.port24-label{position:absolute;left:calc(4px * var(--port24-scale));right:calc(4px * var(--port24-scale));bottom:calc(2px * var(--port24-scale));text-align:center;font-size:calc(9px * var(--port24-scale));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#c9d3de;}',
+	'.port24-tooltip{position:fixed;z-index:100000;pointer-events:none;min-width:190px;background:#0f1722;color:#d9e3ee;border:1px solid #2e3c4d;border-radius:8px;padding:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);font-size:11px;line-height:1.3;display:none;}',
+	'.port24-tooltip-title{font-weight:700;margin-bottom:6px;color:#f8fbff;}',
+	'.port24-tip-meta{margin:2px 0;opacity:.95;}',
+	'.port24-tip-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0;}',
+	'.port24-tip-label{opacity:.9;min-width:24px;}',
+	'.port24-tip-value{opacity:.95;font-variant-numeric:tabular-nums;}',
+	'.port24-tip-svg{display:block;width:120px;height:26px;background:#0a1119;border:1px solid #223041;border-radius:4px;overflow:hidden;}',
+	'.port24-tip-path-in{fill:none;stroke:#38bdf8;stroke-width:1.6;}',
+	'.port24-tip-path-out{fill:none;stroke:#f59e0b;stroke-width:1.6;}',
+	'.port24-card-wrap:hover .port24-hover-tip{display:block;}',
+	'.port24-hover-tip{position:absolute;z-index:40;left:calc(14px * var(--port24-scale));top:calc(42px * var(--port24-scale));min-width:200px;max-width:300px;background:#0f1722;color:#d9e3ee;border:1px solid #2e3c4d;border-radius:8px;padding:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);font-size:11px;line-height:1.3;display:none;pointer-events:none;}'
 ]);
 
 $container = new CDiv();
@@ -88,13 +99,109 @@ $make_card = static function(array $port): CTag {
 	}
 	else {
 		$tooltip .= "\n"._('Trigger: not configured');
+		$trigger_name = _('not configured');
 	}
 
-	$content = new CDiv();
-	$content
-		->addItem((new CDiv())->addClass(!empty($port['is_sfp']) ? 'port24-jack-sfp' : 'port24-jack'))
-		->addItem((new CDiv())->addClass('port24-led'))
-		->addItem((new CDiv($port['name']))->addClass('port24-label'));
+	$spark_path = static function(array $values, int $width = 120, int $height = 26, int $padding = 3): string {
+		$count = count($values);
+		if ($count < 1) {
+			return '';
+		}
+		if ($count === 1) {
+			$y = round($height / 2, 2);
+			return 'M'.$padding.','.$y.' L'.($width - $padding).','.$y;
+		}
+
+		$min = min($values);
+		$max = max($values);
+		$is_flat = abs($max - $min) < 0.0000001;
+		$span = $is_flat ? 1.0 : ($max - $min);
+		$dw = $width - ($padding * 2);
+		$dh = $height - ($padding * 2);
+
+		$parts = [];
+		$last_index = $count - 1;
+		foreach ($values as $idx => $value) {
+			$x = $padding + ($dw * $idx / $last_index);
+			$y = $is_flat
+				? ($padding + ($dh / 2))
+				: ($padding + $dh - ((($value - $min) / $span) * $dh));
+			$parts[] = ($idx === 0 ? 'M' : 'L').round($x, 2).','.round($y, 2);
+		}
+
+		return implode(' ', $parts);
+	};
+	$fmt_last = static function(array $values): string {
+		if ($values === []) {
+			return 'n/a';
+		}
+		$last = (float) $values[count($values) - 1];
+		if ($last >= 1000000) {
+			return number_format($last / 1000000, 2).'M';
+		}
+		if ($last >= 1000) {
+			return number_format($last / 1000, 1).'k';
+		}
+		return (string) round($last);
+	};
+
+	$in_series = is_array($port['traffic_in_series'] ?? null) ? $port['traffic_in_series'] : [];
+	$out_series = is_array($port['traffic_out_series'] ?? null) ? $port['traffic_out_series'] : [];
+	$in_path = $spark_path($in_series);
+	$out_path = $spark_path($out_series);
+
+		$content = new CDiv();
+		$make_spark_svg = static function(string $path, string $line_class): CTag {
+			$svg = (new CTag('svg', true))
+				->addClass('port24-tip-svg')
+				->setAttribute('viewBox', '0 0 120 26');
+
+			$baseline = (new CTag('line', true))
+				->setAttribute('x1', '3')
+				->setAttribute('y1', '13')
+				->setAttribute('x2', '117')
+				->setAttribute('y2', '13')
+				->setAttribute('stroke', 'rgba(148,163,184,0.25)')
+				->setAttribute('stroke-width', '1');
+			$svg->addItem($baseline);
+
+			if ($path !== '') {
+				$svg->addItem(
+					(new CTag('path', true))
+						->addClass($line_class)
+						->setAttribute('d', $path)
+				);
+			}
+
+			return $svg;
+		};
+
+			$content
+				->addItem((new CDiv())->addClass(!empty($port['is_sfp']) ? 'port24-jack-sfp' : 'port24-jack'))
+				->addItem((new CDiv())->addClass('port24-led'))
+				->addItem((new CDiv($port['name']))->addClass('port24-label'));
+
+		$hover_tip = (new CDiv(
+			(new CDiv($port['name']))->addClass('port24-tooltip-title')
+		))
+			->addClass('port24-hover-tip')
+			->addItem((new CDiv(sprintf(_('State: %s'), $state)))->addClass('port24-tip-meta'))
+			->addItem((new CDiv(sprintf(_('Type: %s'), $port_type)))->addClass('port24-tip-meta'))
+			->addItem((new CDiv(sprintf(_('Trigger: %s'), $trigger_name)))->addClass('port24-tip-meta'))
+			->addItem(
+				(new CDiv())
+					->addClass('port24-tip-row')
+					->addItem((new CSpan('IN'))->addClass('port24-tip-label'))
+					->addItem($make_spark_svg($in_path, 'port24-tip-path-in'))
+					->addItem((new CSpan($fmt_last($in_series)))->addClass('port24-tip-value'))
+			)
+			->addItem(
+				(new CDiv())
+					->addClass('port24-tip-row')
+					->addItem((new CSpan('OUT'))->addClass('port24-tip-label'))
+					->addItem($make_spark_svg($out_path, 'port24-tip-path-out'))
+					->addItem((new CSpan($fmt_last($out_series)))->addClass('port24-tip-value'))
+			);
 
 	if ($port['url'] !== '') {
 		$card = new CLink($content, $port['url']);
@@ -103,11 +210,26 @@ $make_card = static function(array $port): CTag {
 		$card = new CDiv($content);
 	}
 
-	return $card
+	$card
 		->addClass('port24-card')
 		->setAttribute('style', '--port-color: '.$port['active_color'].';')
-		->setAttribute('title', $tooltip);
-};
+		->setAttribute('data-port-name', (string) $port['name']);
+
+	if (!empty($port['hostid'])) {
+		$card->setAttribute('data-hostid', (string) $port['hostid']);
+	}
+	if (!empty($port['traffic_in_item_key'])) {
+		$card->setAttribute('data-traffic-in-key', (string) $port['traffic_in_item_key']);
+	}
+	if (!empty($port['traffic_out_item_key'])) {
+		$card->setAttribute('data-traffic-out-key', (string) $port['traffic_out_item_key']);
+	}
+
+		return (new CDiv())
+			->addClass('port24-card-wrap')
+			->addItem($card)
+			->addItem($hover_tip);
+	};
 
 $main_grid = (new CDiv())
 	->addClass('port24-grid')
@@ -138,8 +260,8 @@ if ($sfp_ports !== []) {
 	$face->addItem((new CDiv($uplink_grid))->addClass('port24-uplink'));
 }
 
-$switch->addItem($face);
-$container->addItem($switch);
+	$switch->addItem($face);
+	$container->addItem($switch);
 
 (new CWidgetView($data))
 	->addItem(new CTag('style', true, $css))

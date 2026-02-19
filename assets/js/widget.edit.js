@@ -1,5 +1,5 @@
 (function() {
-	const SWITCH_WIDGET_BUILD = '1.0.5';
+	const SWITCH_WIDGET_BUILD = '1.0.6';
 
 	function getNumericValue(value) {
 		const text = String(value || '').trim();
