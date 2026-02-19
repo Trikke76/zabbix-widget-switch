@@ -8,12 +8,12 @@ Uses native Zabbix selection fields.
 
 ## Configure
 
-1. Select global `Host group` (selection box style).
-2. Select global `Host` (selection box style).
-3. Set `Rows` and `Ports per row` (total ports = rows x ports per row).
-4. Set optional `Brand` and `Model` text for switch bezel.
-5. Set widget `Name` to control the dashboard widget title (header text).
-6. Optional: set `Legend text` (leave empty to hide).
+1. Select global `Host` (selection box style).
+2. Set `Rows` and `Ports per row` (total ports = rows x ports per row).
+3. Set optional `Brand` and `Model` text for switch bezel.
+4. Set widget `Name` to control the dashboard widget title (header text).
+5. Optional: set `Legend text` (leave empty to hide).
+6. Optional: set traffic patterns (`Traffic in item pattern`, `Traffic out item pattern`) using `*` as port placeholder (example: `ifInOctets[*]`).
 7. Optional: select `Profile` to auto-fill layout (`Rows`, `Ports per row`, `SFP ports`, `Size (%)`, `Brand`, `Model`).
 8. Optional: rename profile directly next to `Profile`.
 9. Optional: use `Save current to selected profile` to overwrite selected profile (1-7).
@@ -34,6 +34,15 @@ If you change host, reopen widget edit to refresh trigger lists.
   - default color (light gray) = no trigger configured
   - trigger OK color = trigger configured and OK
   - trigger NOK color = active problem
+- Port hover tooltip includes:
+  - state/type/trigger text
+  - IN/OUT sparkline + latest value (when user has item read permission)
+
+## Release Notes 1.0.7
+
+- Security hardening: widget now validates host access server-side.
+- If selected host is not accessible for current user, widget shows access denied message instead of rendering port data.
+- Trigger state handling tightened to avoid false OK colors when trigger metadata is not accessible.
 
 ## Profile Storage Permissions
 

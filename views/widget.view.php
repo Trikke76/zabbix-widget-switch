@@ -47,7 +47,8 @@ $css = implode('', [
 	'.port24-tip-path-in{fill:none;stroke:#38bdf8;stroke-width:1.6;}',
 	'.port24-tip-path-out{fill:none;stroke:#f59e0b;stroke-width:1.6;}',
 	'.port24-card-wrap:hover .port24-hover-tip{display:block;}',
-	'.port24-hover-tip{position:absolute;z-index:40;left:calc(14px * var(--port24-scale));top:calc(42px * var(--port24-scale));min-width:200px;max-width:300px;background:#0f1722;color:#d9e3ee;border:1px solid #2e3c4d;border-radius:8px;padding:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);font-size:11px;line-height:1.3;display:none;pointer-events:none;}'
+	'.port24-hover-tip{position:absolute;z-index:40;left:calc(14px * var(--port24-scale));top:calc(42px * var(--port24-scale));min-width:200px;max-width:300px;background:#0f1722;color:#d9e3ee;border:1px solid #2e3c4d;border-radius:8px;padding:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);font-size:11px;line-height:1.3;display:none;pointer-events:none;}',
+	'.port24-denied{display:inline-block;padding:10px 12px;border:1px solid #e7b7b7;border-radius:6px;background:#fff5f5;color:#9b2c2c;font-size:13px;}'
 ]);
 
 $container = new CDiv();
@@ -59,6 +60,17 @@ if ($data['legend_text'] !== '') {
 			->addClass('port24-legend')
 			->setAttribute('style', '--port24-scale: '.$scale.'; --port24-legend-size: '.$legend_size.'px;')
 	);
+}
+
+if (!empty($data['access_denied'])) {
+	$container->addItem((new CDiv(_('Access denied: no permissions for selected host.')))->addClass('port24-denied'));
+
+	(new CWidgetView($data))
+		->addItem(new CTag('style', true, $css))
+		->addItem($container)
+		->show();
+
+	return;
 }
 
 $columns = max(1, (int) ($data['ports_per_row'] ?? 12));

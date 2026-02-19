@@ -34,13 +34,46 @@ class WidgetView extends CControllerDashboardWidgetView {
 		if ($widget_name === '') {
 			$widget_name = $this->widget->getDefaultName();
 		}
+
+		if ($hostid !== '' && !$this->hasHostAccess($hostid)) {
+			$this->setResponse(new CControllerResponseData([
+				'name' => $widget_name,
+				'access_denied' => true,
+				'legend_text' => trim((string) ($this->fields_values['legend_text'] ?? '')),
+				'traffic_in_item_pattern' => $traffic_in_pattern,
+				'traffic_out_item_pattern' => $traffic_out_pattern,
+				'hostid' => $hostid,
+				'legend_size' => $this->clamp(
+					$this->extractPositiveInt($this->fields_values['legend_size'] ?? 14),
+					12,
+					18
+				),
+				'switch_brand' => trim((string) ($this->fields_values['switch_brand'] ?? 'NETSWITCH')),
+				'switch_model' => trim((string) ($this->fields_values['switch_model'] ?? 'SW-24G')),
+				'switch_size' => $this->clamp(
+					$this->extractPositiveInt($this->fields_values['switch_size'] ?? 100),
+					40,
+					100
+				),
+				'row_count' => $layout['row_count'],
+				'ports_per_row' => $layout['ports_per_row'],
+				'sfp_ports' => $layout['sfp_ports'],
+				'ports' => [],
+				'user' => [
+					'debug_mode' => $this->getDebugMode()
+				]
+			]));
+
+			return;
+		}
+
 		$sfp_start_index = max(1, $layout['total_ports'] - $layout['sfp_ports'] + 1);
 
 		foreach ($ports as $index => &$port) {
 			$triggerid = $port['triggerid'];
 			$meta = $triggerid !== '' ? ($trigger_meta[$triggerid] ?? null) : null;
 			$is_problem = $meta !== null ? $meta['is_problem'] : false;
-			$has_trigger = ($triggerid !== '');
+			$has_trigger = ($triggerid !== '' && $meta !== null);
 			if (!$has_trigger) {
 				$port['active_color'] = $port['default_color'];
 			}
@@ -71,6 +104,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 
 			$this->setResponse(new CControllerResponseData([
 				'name' => $widget_name,
+				'access_denied' => false,
 				'legend_text' => trim((string) ($this->fields_values['legend_text'] ?? '')),
 				'traffic_in_item_pattern' => $traffic_in_pattern,
 				'traffic_out_item_pattern' => $traffic_out_pattern,
@@ -81,20 +115,34 @@ class WidgetView extends CControllerDashboardWidgetView {
 					18
 				),
 				'switch_brand' => trim((string) ($this->fields_values['switch_brand'] ?? 'NETSWITCH')),
-			'switch_model' => trim((string) ($this->fields_values['switch_model'] ?? 'SW-24G')),
-			'switch_size' => $this->clamp(
-				$this->extractPositiveInt($this->fields_values['switch_size'] ?? 100),
-				40,
-				100
-			),
-			'row_count' => $layout['row_count'],
-			'ports_per_row' => $layout['ports_per_row'],
-			'sfp_ports' => $layout['sfp_ports'],
-			'ports' => $ports,
-			'user' => [
-				'debug_mode' => $this->getDebugMode()
-			]
-		]));
+				'switch_model' => trim((string) ($this->fields_values['switch_model'] ?? 'SW-24G')),
+				'switch_size' => $this->clamp(
+					$this->extractPositiveInt($this->fields_values['switch_size'] ?? 100),
+					40,
+					100
+				),
+				'row_count' => $layout['row_count'],
+				'ports_per_row' => $layout['ports_per_row'],
+				'sfp_ports' => $layout['sfp_ports'],
+				'ports' => $ports,
+				'user' => [
+					'debug_mode' => $this->getDebugMode()
+				]
+			]));
+	}
+
+	private function hasHostAccess(string $hostid): bool {
+		if ($hostid === '') {
+			return true;
+		}
+
+		$rows = API::Host()->get([
+			'output' => ['hostid'],
+			'hostids' => [$hostid],
+			'limit' => 1
+		]);
+
+		return is_array($rows) && $rows !== [];
 	}
 
 	private function loadPortsFromFields(int $total_ports): array {
