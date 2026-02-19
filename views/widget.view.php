@@ -70,7 +70,15 @@ foreach ($data['ports'] as $port) {
 }
 
 $make_card = static function(array $port): CTag {
-	$state = $port['is_problem'] ? _('Problem') : _('Normal');
+	if (empty($port['has_trigger'])) {
+		$state = _('No trigger');
+	}
+	elseif ($port['is_problem']) {
+		$state = _('Problem');
+	}
+	else {
+		$state = _('OK');
+	}
 	$port_type = !empty($port['is_sfp']) ? 'SFP' : 'RJ45';
 	$tooltip = $port['name']."\n".sprintf(_('State: %s'), $state);
 	$tooltip .= "\n".sprintf(_('Type: %s'), $port_type);

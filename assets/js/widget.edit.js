@@ -112,7 +112,7 @@
 		const seen = new Set();
 		for (const field of document.querySelectorAll('input')) {
 			const token = `${field.name || ''} ${field.id || ''}`;
-			if (!/port\d+_(default|trigger)_color/.test(token)) {
+			if (!/port\d+_(default_color|trigger_ok_color|trigger_color)/.test(token)) {
 				continue;
 			}
 
@@ -123,6 +123,17 @@
 			}
 		}
 		return fields;
+	}
+
+	function getColorFallback(field) {
+		const token = `${field.name || ''} ${field.id || ''}`;
+		if (/trigger_ok_color/.test(token)) {
+			return '#22C55E';
+		}
+		if (/trigger_color/.test(token)) {
+			return '#E53E3E';
+		}
+		return '#D1D5DB';
 	}
 
 	function ensureColorPickerForField(field) {
@@ -150,7 +161,7 @@
 			return;
 		}
 
-		const fallback = /trigger_color/.test(`${field.name || ''} ${field.id || ''}`) ? '#E53E3E' : '#2F855A';
+		const fallback = getColorFallback(field);
 		field.value = normalizeHexColor(field.value, fallback);
 		picker.value = field.value;
 
@@ -176,9 +187,200 @@
 	}
 
 	function setFieldColor(field, color) {
-		field.value = color.toUpperCase();
+		field.value = normalizeHexColor(color, getColorFallback(field));
 		field.dispatchEvent(new Event('input', {bubbles: true}));
 		field.dispatchEvent(new Event('change', {bubbles: true}));
+	}
+
+	function migrateLegacyDefaultColors() {
+		if (document.body.dataset.port24DefaultColorMigrated === '1') {
+			return;
+		}
+
+		const legacyDefaults = new Set(['#2F855A', '#84CC16']);
+		for (const field of getColorFields()) {
+			const token = `${field.name || ''} ${field.id || ''}`;
+			if (!/port\d+_default_color/.test(token)) {
+				continue;
+			}
+
+			const normalized = normalizeHexColor(field.value, '#D1D5DB');
+			if (legacyDefaults.has(normalized)) {
+				setFieldColor(field, '#D1D5DB');
+			}
+		}
+
+		document.body.dataset.port24DefaultColorMigrated = '1';
+	}
+
+	function ensureModernBulkPickerStyle() {
+		if (document.getElementById('port24-modern-picker-style')) {
+			return;
+		}
+
+		const style = document.createElement('style');
+		style.id = 'port24-modern-picker-style';
+		style.textContent = [
+			'.port24-modern-picker{position:relative;display:inline-flex;align-items:center;}',
+			'.port24-modern-picker .port24-swatch-btn{width:44px;height:30px;border:1px solid rgba(148,163,184,.45);border-radius:6px;background:transparent;padding:3px;cursor:pointer;box-shadow:none;}',
+			'.port24-modern-picker .port24-swatch-btn span{display:block;width:100%;height:100%;border-radius:4px;}',
+			'.port24-modern-picker .port24-pop{position:absolute;z-index:1200;top:36px;left:0;min-width:230px;background:#141a22;border:1px solid #2f3947;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.45);padding:10px;color:#d9e2ec;}',
+			'.port24-modern-picker .port24-pop.is-hidden{display:none;}',
+			'.port24-modern-picker .port24-tabs{display:flex;gap:6px;margin:0 0 10px 0;}',
+			'.port24-modern-picker .port24-tab{border:1px solid #344154;background:#1b2430;color:#c9d5e2;border-radius:6px;padding:4px 8px;cursor:pointer;}',
+			'.port24-modern-picker .port24-tab.is-active{background:#2e6f47;border-color:#3f8b5f;color:#fff;}',
+			'.port24-modern-picker .port24-grid{display:grid;grid-template-columns:repeat(10,18px);gap:8px;margin:0 0 10px 0;}',
+			'.port24-modern-picker .port24-dot{appearance:none;-webkit-appearance:none;display:block;width:18px;height:18px;min-width:18px;min-height:18px;box-sizing:border-box;border-radius:9999px;border:1px solid rgba(255,255,255,.22);cursor:pointer;padding:0;margin:0;line-height:0;font-size:0;}',
+			'.port24-modern-picker .port24-custom input{width:100%;background:#0f151d;color:#e5edf5;border:1px solid #354255;border-radius:6px;padding:6px 8px;}',
+			'.port24-modern-picker .port24-custom-actions{margin-top:8px;display:flex;justify-content:flex-end;}',
+			'.port24-modern-picker .port24-custom-apply{border:1px solid #3b82f6;background:#0f172a;color:#e2ecff;border-radius:6px;padding:4px 10px;cursor:pointer;}',
+			'.port24-modern-picker .port24-custom.is-hidden,.port24-modern-picker .port24-colors.is-hidden{display:none;}'
+		].join('');
+		document.head.appendChild(style);
+	}
+
+	function createModernBulkPicker(initialColor) {
+		ensureModernBulkPickerStyle();
+
+		const palette = [
+			'#7F1D1D', '#991B1B', '#B91C1C', '#DC2626', '#EF4444', '#F87171', '#FCA5A5', '#FECACA',
+			'#7C2D12', '#9A3412', '#C2410C', '#EA580C', '#F97316', '#FB923C', '#FDBA74', '#FED7AA',
+			'#78350F', '#92400E', '#B45309', '#D97706', '#F59E0B', '#FBBF24', '#FCD34D', '#FDE68A',
+			'#713F12', '#854D0E', '#A16207', '#CA8A04', '#EAB308', '#FACC15', '#FDE047', '#FEF08A',
+			'#365314', '#3F6212', '#4D7C0F', '#65A30D', '#84CC16', '#A3E635', '#BEF264', '#D9F99D',
+			'#14532D', '#166534', '#15803D', '#16A34A', '#22C55E', '#4ADE80', '#86EFAC', '#BBF7D0',
+			'#134E4A', '#115E59', '#0F766E', '#0D9488', '#14B8A6', '#2DD4BF', '#5EEAD4', '#99F6E4',
+			'#164E63', '#155E75', '#0369A1', '#0284C7', '#0EA5E9', '#38BDF8', '#7DD3FC', '#BAE6FD',
+			'#1E3A8A', '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE',
+			'#4C1D95', '#5B21B6', '#6D28D9', '#7C3AED', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE',
+			'#9F1239', '#BE123C', '#DB2777', '#EC4899', '#F472B6', '#F9A8D4', '#FBCFE8', '#FCE7F3',
+			'#111827', '#1F2937', '#374151', '#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#F3F4F6'
+		];
+
+		const root = document.createElement('div');
+		root.className = 'port24-modern-picker';
+
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.className = 'port24-swatch-btn';
+		button.title = 'Choose color';
+
+		const swatch = document.createElement('span');
+		button.appendChild(swatch);
+
+		const pop = document.createElement('div');
+		pop.className = 'port24-pop is-hidden';
+
+		const tabs = document.createElement('div');
+		tabs.className = 'port24-tabs';
+
+		const tabColors = document.createElement('button');
+		tabColors.type = 'button';
+		tabColors.className = 'port24-tab is-active';
+		tabColors.textContent = 'Colors';
+
+		const tabCustom = document.createElement('button');
+		tabCustom.type = 'button';
+		tabCustom.className = 'port24-tab';
+		tabCustom.textContent = 'Custom';
+
+		tabs.appendChild(tabColors);
+		tabs.appendChild(tabCustom);
+
+		const colorsWrap = document.createElement('div');
+		colorsWrap.className = 'port24-colors';
+		const grid = document.createElement('div');
+		grid.className = 'port24-grid';
+		colorsWrap.appendChild(grid);
+
+		const customWrap = document.createElement('div');
+		customWrap.className = 'port24-custom is-hidden';
+		const customInput = document.createElement('input');
+		customInput.type = 'text';
+		customInput.maxLength = 7;
+		customInput.placeholder = '#D1D5DB';
+		customWrap.appendChild(customInput);
+		const customActions = document.createElement('div');
+		customActions.className = 'port24-custom-actions';
+		const customApply = document.createElement('button');
+		customApply.type = 'button';
+		customApply.className = 'port24-custom-apply';
+		customApply.textContent = 'Apply';
+		customActions.appendChild(customApply);
+		customWrap.appendChild(customActions);
+
+		pop.appendChild(tabs);
+		pop.appendChild(colorsWrap);
+		pop.appendChild(customWrap);
+		root.appendChild(button);
+		root.appendChild(pop);
+
+		let value = normalizeHexColor(initialColor, '#D1D5DB');
+
+		const setValue = (color) => {
+			value = normalizeHexColor(color, value);
+			swatch.style.background = value;
+			customInput.value = value;
+		};
+
+		for (const color of palette) {
+			const dot = document.createElement('button');
+			dot.type = 'button';
+			dot.className = 'port24-dot';
+			dot.style.background = color;
+			dot.addEventListener('click', () => {
+				setValue(color);
+				pop.classList.add('is-hidden');
+			});
+			grid.appendChild(dot);
+		}
+
+		const showColors = () => {
+			tabColors.classList.add('is-active');
+			tabCustom.classList.remove('is-active');
+			colorsWrap.classList.remove('is-hidden');
+			customWrap.classList.add('is-hidden');
+		};
+
+		const showCustom = () => {
+			tabCustom.classList.add('is-active');
+			tabColors.classList.remove('is-active');
+			customWrap.classList.remove('is-hidden');
+			colorsWrap.classList.add('is-hidden');
+		};
+
+		tabColors.addEventListener('click', showColors);
+		tabCustom.addEventListener('click', showCustom);
+
+		customInput.addEventListener('change', () => {
+			setValue(customInput.value);
+		});
+		customInput.addEventListener('keydown', (event) => {
+			if (event.key === 'Enter') {
+				setValue(customInput.value);
+			}
+		});
+		customApply.addEventListener('click', () => {
+			setValue(customInput.value);
+			pop.classList.add('is-hidden');
+		});
+
+		button.addEventListener('click', () => {
+			pop.classList.toggle('is-hidden');
+		});
+
+		document.addEventListener('click', (event) => {
+			if (!root.contains(event.target)) {
+				pop.classList.add('is-hidden');
+			}
+		});
+
+		setValue(value);
+
+		return {
+			element: root,
+			getValue: () => value
+		};
 	}
 
 	function ensureBulkControls() {
@@ -194,6 +396,9 @@
 		const allColorFields = getColorFields();
 		const defaultField = allColorFields.find((field) =>
 			/port\d+_default_color/.test(`${field.name || ''} ${field.id || ''}`)
+		);
+		const triggerOkField = allColorFields.find((field) =>
+			/port\d+_trigger_ok_color/.test(`${field.name || ''} ${field.id || ''}`)
 		);
 		const triggerField = allColorFields.find((field) =>
 			/port\d+_trigger_color/.test(`${field.name || ''} ${field.id || ''}`)
@@ -214,8 +419,8 @@
 
 		const row = document.createElement('div');
 		row.style.display = 'grid';
-		row.style.gridTemplateColumns = '1fr 1fr';
-		row.style.gap = '12px';
+		row.style.gridTemplateColumns = '1fr';
+		row.style.gap = '10px';
 
 		const makeAction = (labelText, initialColor, matcher) => {
 			const box = document.createElement('div');
@@ -227,16 +432,14 @@
 			label.textContent = labelText;
 			label.style.minWidth = '120px';
 
-			const picker = document.createElement('input');
-			picker.type = 'color';
-			picker.value = normalizeHexColor(initialColor, '#2F855A');
+			const picker = createModernBulkPicker(initialColor);
 
 			const button = document.createElement('button');
 			button.type = 'button';
 			button.className = 'btn-alt';
 			button.textContent = 'Apply to all';
 			button.addEventListener('click', () => {
-				const color = normalizeHexColor(picker.value, '#2F855A');
+				const color = normalizeHexColor(picker.getValue(), '#D1D5DB');
 				for (const field of getColorFields()) {
 					if (matcher.test(`${field.name || ''} ${field.id || ''}`)) {
 						setFieldColor(field, color);
@@ -245,7 +448,7 @@
 			});
 
 			box.appendChild(label);
-			box.appendChild(picker);
+			box.appendChild(picker.element);
 			box.appendChild(button);
 
 			return box;
@@ -254,13 +457,20 @@
 		row.appendChild(
 			makeAction(
 				'Default color',
-				defaultField ? defaultField.value : '#2F855A',
+				defaultField ? defaultField.value : '#D1D5DB',
 				/port\d+_default_color/
 			)
 		);
 		row.appendChild(
 			makeAction(
-				'Trigger color',
+				'Trigger OK color',
+				triggerOkField ? triggerOkField.value : '#22C55E',
+				/port\d+_trigger_ok_color/
+			)
+		);
+		row.appendChild(
+			makeAction(
+				'Trigger NOK color',
 				triggerField ? triggerField.value : '#E53E3E',
 				/port\d+_trigger_color/
 			)
@@ -868,6 +1078,9 @@
 
 		select.addEventListener('change', () => {
 			field.value = select.value === '0' ? '' : select.value;
+			if (field.value !== '') {
+				select.dataset.initialValue = String(field.value);
+			}
 			field.dispatchEvent(new Event('change', {bubbles: true}));
 		});
 
@@ -879,13 +1092,13 @@
 		return select;
 	}
 
-	function setSelectOptions(select, triggers, hostid) {
-		const selected = select.value;
+	function setSelectOptions(select, triggers, hostid, selectedValue = '') {
+		const selected = String(selectedValue || select.value || '');
 		const firstText = hostid === '' ? 'Select host first' : 'Select trigger';
 		const options = [{value: '', label: firstText}];
 
 		for (const trigger of triggers) {
-			options.push({value: trigger.id, label: trigger.name});
+			options.push({value: String(trigger.id), label: trigger.name});
 		}
 
 		select.innerHTML = '';
@@ -896,8 +1109,9 @@
 			select.appendChild(node);
 		}
 
-		if (selected !== '' && options.some((option) => option.value === selected)) {
+		if (selected !== '' && options.some((option) => String(option.value) === selected)) {
 			select.value = selected;
+			select.dataset.initialValue = selected;
 		}
 		else {
 			select.value = '';
@@ -909,7 +1123,7 @@
 			const select = ensureSelectForField(field);
 			const initial = String(field.value || select.dataset.initialValue || '');
 			select.value = initial;
-			setSelectOptions(select, triggers, hostid);
+			setSelectOptions(select, triggers, hostid, initial);
 		}
 	}
 
@@ -1018,6 +1232,7 @@
 			let inFlight = false;
 
 			const refresh = () => {
+				migrateLegacyDefaultColors();
 				ensurePresetControls();
 				if (typeof window.switch_widget_apply_preset_if_changed === 'function') {
 					window.switch_widget_apply_preset_if_changed();

@@ -79,6 +79,7 @@ for ($i = 1; $i <= $port_count; $i++) {
 		->addField(new CWidgetFieldTextBoxView($data['fields']['port'.$i.'_name']))
 		->addField(new CWidgetFieldTextBoxView($data['fields']['port'.$i.'_triggerid']))
 		->addField(new CWidgetFieldTextBoxView($data['fields']['port'.$i.'_default_color']))
+		->addField(new CWidgetFieldTextBoxView($data['fields']['port'.$i.'_trigger_ok_color']))
 		->addField(new CWidgetFieldTextBoxView($data['fields']['port'.$i.'_trigger_color']));
 
 	$form->addFieldset($fieldset);

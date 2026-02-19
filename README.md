@@ -20,8 +20,8 @@ Uses native Zabbix selection fields.
 10. Set optional `Size (%)` (40-100) to make switch compact.
 11. Set optional `SFP ports` (0 = none, 2 = two extra SFP ports).
 12. Select per-port `Trigger` from dropdown (for selected host).
-13. Set default/trigger colors per port (with color picker).
-14. Optional: use `Bulk actions` to apply one default/trigger color to all ports.
+13. Set per-port `Default color`, `Trigger OK color` and `Trigger NOK color`.
+14. Optional: use `Bulk actions` to apply one color to all ports for each state.
 
 Note: Trigger options are rendered server-side from selected host.
 If you change host, reopen widget edit to refresh trigger lists.
@@ -31,8 +31,9 @@ If you change host, reopen widget edit to refresh trigger lists.
 - Widget renders with switch-style port front panel.
 - Widget header title uses the widget `Name` field.
 - Port status uses LED-like color indicator:
-  - default color = normal
-  - trigger color = active problem
+  - default color (light gray) = no trigger configured
+  - trigger OK color = trigger configured and OK
+  - trigger NOK color = active problem
 
 ## Profile Storage Permissions
 

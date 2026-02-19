@@ -126,10 +126,14 @@ class WidgetForm extends CWidgetForm {
 				)
 				->addField(
 					(new CWidgetFieldTextBox('port'.$i.'_default_color', sprintf(_('Port %d default color'), $i)))
-						->setDefault('#2f855a')
+						->setDefault('#d1d5db')
 				)
 				->addField(
-					(new CWidgetFieldTextBox('port'.$i.'_trigger_color', sprintf(_('Port %d trigger color'), $i)))
+					(new CWidgetFieldTextBox('port'.$i.'_trigger_ok_color', sprintf(_('Port %d trigger OK color'), $i)))
+						->setDefault('#22c55e')
+				)
+				->addField(
+					(new CWidgetFieldTextBox('port'.$i.'_trigger_color', sprintf(_('Port %d trigger NOK color'), $i)))
 						->setDefault('#e53e3e')
 				);
 		}

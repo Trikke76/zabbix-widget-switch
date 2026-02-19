@@ -13,7 +13,6 @@ class WidgetView extends CControllerDashboardWidgetView {
 	private const MAX_PORTS_PER_ROW = 48;
 	private const MAX_SFP_PORTS = 32;
 	private const MAX_TOTAL_PORTS = 256;
-
 	protected function doAction(): void {
 		$layout = $this->getLayout();
 		$ports = $this->loadPortsFromFields($layout['total_ports']);
@@ -34,8 +33,18 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$triggerid = $port['triggerid'];
 			$meta = $triggerid !== '' ? ($trigger_meta[$triggerid] ?? null) : null;
 			$is_problem = $meta !== null ? $meta['is_problem'] : false;
-			$port['active_color'] = $is_problem ? $port['trigger_color'] : $port['default_color'];
+			$has_trigger = ($triggerid !== '');
+			if (!$has_trigger) {
+				$port['active_color'] = $port['default_color'];
+			}
+			elseif ($is_problem) {
+				$port['active_color'] = $port['trigger_color'];
+			}
+			else {
+				$port['active_color'] = $port['trigger_ok_color'];
+			}
 			$port['is_problem'] = $is_problem;
+			$port['has_trigger'] = $has_trigger;
 			$port['url'] = $triggerid !== ''
 				? 'zabbix.php?action=problem.view&filter_set=1&triggerids%5B0%5D='.$triggerid
 				: '';
@@ -78,7 +87,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$ports[] = [
 				'name' => trim((string) ($this->fields_values['port'.$i.'_name'] ?? sprintf('Port %d', $i))),
 				'triggerid' => $triggerid_raw > 0 ? (string) $triggerid_raw : '',
-				'default_color' => $this->safeColor((string) ($this->fields_values['port'.$i.'_default_color'] ?? '#2f855a'), '#2f855a'),
+				'default_color' => $this->safeColor((string) ($this->fields_values['port'.$i.'_default_color'] ?? '#d1d5db'), '#d1d5db'),
+				'trigger_ok_color' => $this->safeColor((string) ($this->fields_values['port'.$i.'_trigger_ok_color'] ?? '#22c55e'), '#22c55e'),
 				'trigger_color' => $this->safeColor((string) ($this->fields_values['port'.$i.'_trigger_color'] ?? '#e53e3e'), '#e53e3e')
 			];
 		}
