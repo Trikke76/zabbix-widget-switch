@@ -3,7 +3,6 @@
 namespace Modules\SwitchWidget\Includes;
 
 use Zabbix\Widgets\CWidgetForm;
-use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectGroup;
 use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectHost;
 use Zabbix\Widgets\Fields\CWidgetFieldSelect;
 use Zabbix\Widgets\Fields\CWidgetFieldTextBox;
@@ -14,16 +13,11 @@ class WidgetForm extends CWidgetForm {
 	private const MAX_ROW_COUNT = 24;
 	private const MAX_PORTS_PER_ROW = 48;
 	private const MAX_SFP_PORTS = 32;
-	private const MAX_TOTAL_PORTS = 256;
+	private const MAX_TOTAL_PORTS = 96;
 
 	public function addFields(): self {
 		$total_ports = self::MAX_TOTAL_PORTS;
 		$profile_defaults = $this->loadProfileDefaults();
-
-		$this->addField(
-			(new CWidgetFieldMultiSelectGroup('groupids', _('Host group')))
-				->setMultiple(false)
-		);
 
 		$this->addField(
 			(new CWidgetFieldMultiSelectHost('hostids', _('Host')))

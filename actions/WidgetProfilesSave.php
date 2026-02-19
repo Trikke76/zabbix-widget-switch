@@ -7,6 +7,7 @@ use CControllerResponseData;
 
 class WidgetProfilesSave extends CController {
 	protected function init(): void {
+		// Keep endpoint usable for dashboard widget AJAX in all supported role setups.
 		$this->disableCsrfValidation();
 	}
 
@@ -24,7 +25,7 @@ class WidgetProfilesSave extends CController {
 	}
 
 	protected function checkPermissions(): bool {
-		return true;
+		return $this->getUserType() >= USER_TYPE_ZABBIX_USER;
 	}
 
 	protected function doAction(): void {
@@ -77,14 +78,15 @@ class WidgetProfilesSave extends CController {
 			return;
 		}
 
-		$this->respond(true);
+		$this->respond(true, '', $data);
 	}
 
-	private function respond(bool $saved, string $error = ''): void {
+	private function respond(bool $saved, string $error = '', array $profiles = []): void {
 		$this->setResponse(new CControllerResponseData([
 			'main_block' => json_encode([
 				'saved' => $saved,
-				'error' => $error
+				'error' => $error,
+				'profiles' => $profiles
 			])
 		]));
 	}

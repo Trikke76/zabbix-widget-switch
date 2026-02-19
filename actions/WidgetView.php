@@ -12,7 +12,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 	private const MAX_ROW_COUNT = 24;
 	private const MAX_PORTS_PER_ROW = 48;
 	private const MAX_SFP_PORTS = 32;
-	private const MAX_TOTAL_PORTS = 256;
+	private const MAX_TOTAL_PORTS = 96;
 	protected function doAction(): void {
 		$layout = $this->getLayout();
 		$ports = $this->loadPortsFromFields($layout['total_ports']);
@@ -148,6 +148,26 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'is_problem' => ((int) $row['value'] === 1),
 				'description' => (string) $row['description']
 			];
+		}
+
+		$missing_ids = [];
+		foreach ($triggerids as $triggerid) {
+			if (!isset($result[$triggerid])) {
+				$missing_ids[] = $triggerid;
+			}
+		}
+		if ($missing_ids !== []) {
+			$prototype_rows = API::TriggerPrototype()->get([
+				'output' => ['triggerid', 'description'],
+				'triggerids' => $missing_ids,
+				'preservekeys' => true
+			]);
+			foreach ($prototype_rows as $row) {
+				$result[(string) $row['triggerid']] = [
+					'is_problem' => false,
+					'description' => '[Prototype] '.(string) $row['description']
+				];
+			}
 		}
 
 		return $result;

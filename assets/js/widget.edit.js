@@ -1,4 +1,5 @@
 (function() {
+	const SWITCH_WIDGET_BUILD = '1.0.5';
 
 	function getNumericValue(value) {
 		const text = String(value || '').trim();
@@ -186,10 +187,21 @@
 		field.dataset.port24ColorInit = '1';
 	}
 
-	function setFieldColor(field, color) {
-		field.value = normalizeHexColor(color, getColorFallback(field));
-		field.dispatchEvent(new Event('input', {bubbles: true}));
-		field.dispatchEvent(new Event('change', {bubbles: true}));
+	function setFieldColor(field, color, dispatchEvents = true) {
+		const normalized = normalizeHexColor(color, getColorFallback(field));
+		field.value = normalized;
+
+		const picker = field.parentElement
+			? field.parentElement.querySelector('input[type="color"]')
+			: null;
+		if (picker) {
+			picker.value = normalized;
+		}
+
+		if (dispatchEvents) {
+			field.dispatchEvent(new Event('input', {bubbles: true}));
+			field.dispatchEvent(new Event('change', {bubbles: true}));
+		}
 	}
 
 	function migrateLegacyDefaultColors() {
@@ -422,11 +434,11 @@
 		row.style.gridTemplateColumns = '1fr';
 		row.style.gap = '10px';
 
-		const makeAction = (labelText, initialColor, matcher) => {
-			const box = document.createElement('div');
-			box.style.display = 'flex';
-			box.style.alignItems = 'center';
-			box.style.gap = '8px';
+			const makeAction = (labelText, initialColor, matcher) => {
+				const box = document.createElement('div');
+				box.style.display = 'flex';
+				box.style.alignItems = 'center';
+				box.style.gap = '8px';
 
 			const label = document.createElement('label');
 			label.textContent = labelText;
@@ -434,25 +446,45 @@
 
 			const picker = createModernBulkPicker(initialColor);
 
-			const button = document.createElement('button');
-			button.type = 'button';
-			button.className = 'btn-alt';
-			button.textContent = 'Apply to all';
-			button.addEventListener('click', () => {
-				const color = normalizeHexColor(picker.getValue(), '#D1D5DB');
-				for (const field of getColorFields()) {
-					if (matcher.test(`${field.name || ''} ${field.id || ''}`)) {
-						setFieldColor(field, color);
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'btn-alt';
+				button.textContent = 'Apply to all';
+				const feedback = document.createElement('span');
+				feedback.style.fontSize = '12px';
+				feedback.style.color = '#2F855A';
+				feedback.style.minWidth = '80px';
+				feedback.style.visibility = 'hidden';
+				button.addEventListener('click', () => {
+					const color = normalizeHexColor(picker.getValue(), '#D1D5DB');
+					let updated = 0;
+					let firstUpdatedField = null;
+					for (const field of getColorFields()) {
+						if (matcher.test(`${field.name || ''} ${field.id || ''}`)) {
+							if (firstUpdatedField === null) {
+								firstUpdatedField = field;
+							}
+							setFieldColor(field, color, false);
+							updated++;
+						}
 					}
-				}
-			});
+					if (firstUpdatedField !== null) {
+						firstUpdatedField.dispatchEvent(new Event('change', {bubbles: true}));
+					}
+					feedback.textContent = `Applied (${updated})`;
+					feedback.style.visibility = 'visible';
+					window.setTimeout(() => {
+						feedback.style.visibility = 'hidden';
+					}, 1200);
+				});
 
-			box.appendChild(label);
-			box.appendChild(picker.element);
-			box.appendChild(button);
+				box.appendChild(label);
+				box.appendChild(picker.element);
+				box.appendChild(button);
+				box.appendChild(feedback);
 
-			return box;
-		};
+				return box;
+			};
 
 		row.appendChild(
 			makeAction(
@@ -506,11 +538,17 @@
 		field.dispatchEvent(new Event('change', {bubbles: true}));
 	}
 
+	function getCsrfTokenField() {
+		return document.querySelector(
+			'input[type="hidden"][name="csrf_token"], input[type="hidden"][name="_csrf_token"], input[type="hidden"][name*="csrf"]'
+		);
+	}
+
 	function getConfiguredPortTotal() {
 		const rows = Math.max(1, Number(readIntField('row_count', '2')));
 		const perRow = Math.max(1, Number(readIntField('ports_per_row', '12')));
 		const sfp = Math.max(0, Number(readIntField('sfp_ports', '0')));
-		return Math.max(1, Math.min(256, (rows * perRow) + sfp));
+		return Math.max(1, Math.min(96, (rows * perRow) + sfp));
 	}
 
 	function updatePortFieldsetVisibility() {
@@ -731,44 +769,221 @@
 		return map;
 	}
 
-	function ensurePresetControls() {
-		const presetField = findField('preset');
-		if (!presetField || presetField.dataset.switchPresetInit === '1') {
-			return;
-		}
+		function ensurePresetControls() {
+			const presetField = findField('preset');
+			if (!presetField || presetField.dataset.switchPresetInit === '1') {
+				return;
+			}
 
 		let lastPresetValue = String(presetField.value || '0');
 
-		const getProfileNameField = (presetId) => findField(`profile${presetId}_name`);
-		const getProfileField = (presetId, suffix) => findField(`profile${presetId}${suffix}`);
-		const updatePresetOptionLabel = (presetId, name) => {
-			const labelText = name && name.trim() !== '' ? name.trim() : `Profile ${presetId}`;
-			const option = presetField.querySelector(`option[value="${presetId}"]`);
-			if (option) {
-				option.textContent = labelText;
-				option.label = labelText;
+			const normalizeProfileName = (value, presetId) => {
+				const cleaned = String(value || '').trim().slice(0, 15);
+				return cleaned !== '' ? cleaned : `Profile ${presetId}`;
+			};
 
-				// Force select UI refresh in browsers/widgets that cache option labels.
-				const replacement = new Option(labelText, option.value, false, option.selected);
-				replacement.label = labelText;
-				if (option.selected) {
-					replacement.selected = true;
+			const getProfileNameField = (presetId) => findField(`profile${presetId}_name`);
+			const getProfileField = (presetId, suffix) => findField(`profile${presetId}${suffix}`);
+			const getPresetLabelForValue = (value) => {
+				const key = String(value || '0');
+				const nativeOptions = presetField.options;
+				if (nativeOptions && typeof nativeOptions[Symbol.iterator] === 'function') {
+					for (const option of nativeOptions) {
+						if (String(option.value) === key) {
+							return String(option.label || option.textContent || '').trim();
+						}
+					}
 				}
-				presetField.replaceChild(replacement, option);
-				if (presetField.value !== String(presetId)) {
-					presetField.value = String(presetId);
+
+				const raw = presetField.getAttribute('data-options');
+				if (!raw) {
+					return '';
 				}
+				try {
+					const parsed = JSON.parse(raw);
+					if (!Array.isArray(parsed)) {
+						return '';
+					}
+					const match = parsed.find((entry) =>
+						entry && typeof entry === 'object' && Object.prototype.hasOwnProperty.call(entry, 'value')
+						&& String(entry.value) === key
+					);
+					return match ? String(match.label || '').trim() : '';
+				}
+				catch (error) {
+					return '';
+				}
+			};
+			const updatePresetRenderedLabel = () => {
+				const selected = String(presetField.value || '0');
+				const label = getPresetLabelForValue(selected);
+				if (label === '') {
+					return;
+				}
+
+				const selectors = [
+					'.selected-option',
+					'.selected-value',
+					'.z-select-value',
+					'.js-select-value',
+					'.select-value',
+					'.btn-dropdown-toggle'
+				];
+
+				for (const selector of selectors) {
+					for (const node of presetField.querySelectorAll(selector)) {
+						node.textContent = label;
+					}
+				}
+
+				if (presetField.shadowRoot) {
+					for (const selector of selectors) {
+						for (const node of presetField.shadowRoot.querySelectorAll(selector)) {
+							node.textContent = label;
+						}
+					}
+				}
+			};
+			const mutatePresetDataOptions = (mutator) => {
+				const raw = presetField.getAttribute('data-options');
+				if (!raw) {
+					return false;
+				}
+
+				let parsed;
+				try {
+					parsed = JSON.parse(raw);
+				}
+				catch (error) {
+					return false;
+				}
+
+				if (!Array.isArray(parsed)) {
+					return false;
+				}
+
+				const updated = mutator(parsed);
+				if (!Array.isArray(updated)) {
+					return false;
+				}
+
+				const json = JSON.stringify(updated);
+				presetField.setAttribute('data-options', json);
+				if (presetField.dataset) {
+					presetField.dataset.options = json;
+				}
+
+				return true;
+			};
+			const rebuildPresetOptionsFromFields = () => {
+				const currentValue = String(presetField.value || '0');
+				const labels = {'0': 'Custom'};
+				for (let presetId = 1; presetId <= 7; presetId++) {
+					const hidden = getProfileNameField(presetId);
+					const text = String(hidden?.value || '').trim();
+					labels[String(presetId)] = text !== '' ? text : `Profile ${presetId}`;
+				}
+
+				const nativeOptions = presetField.options;
+				if (nativeOptions && typeof nativeOptions[Symbol.iterator] === 'function') {
+					for (const option of nativeOptions) {
+						const key = String(option.value);
+						if (Object.prototype.hasOwnProperty.call(labels, key)) {
+							option.textContent = labels[key];
+							option.label = labels[key];
+						}
+					}
+				}
+				else {
+					mutatePresetDataOptions((options) => options.map((option) => {
+						if (!option || typeof option !== 'object' || !Object.prototype.hasOwnProperty.call(option, 'value')) {
+							return option;
+						}
+
+						const key = String(option.value);
+						if (Object.prototype.hasOwnProperty.call(labels, key)) {
+							return {...option, label: labels[key]};
+						}
+
+						return option;
+					}));
+				}
+
+				presetField.value = currentValue;
+				presetField.setAttribute('value', currentValue);
+				updatePresetRenderedLabel();
+			};
+			const updatePresetOptionLabel = (presetId, name) => {
+				const labelText = name && name.trim() !== '' ? name.trim() : `Profile ${presetId}`;
+				const option = presetField.querySelector(`option[value="${presetId}"]`);
+				if (option) {
+					option.textContent = labelText;
+					option.label = labelText;
+					return;
+				}
+
+				mutatePresetDataOptions((options) => options.map((entry) => {
+					if (!entry || typeof entry !== 'object' || !Object.prototype.hasOwnProperty.call(entry, 'value')) {
+						return entry;
+					}
+					return String(entry.value) === String(presetId) ? {...entry, label: labelText} : entry;
+				}));
+			};
+			const refreshPresetSelectUi = () => {
+				const currentValue = String(presetField.value || '0');
+				// Force repaint of native/select-enhanced controls.
+				rebuildPresetOptionsFromFields();
+				presetField.value = '0';
+				presetField.value = currentValue;
+				presetField.setAttribute('value', currentValue);
+				updatePresetRenderedLabel();
+				presetField.dispatchEvent(new Event('input', {bubbles: true}));
+				presetField.dispatchEvent(new Event('change', {bubbles: true}));
+				if (window.jQuery) {
+				const $preset = window.jQuery(presetField);
+				$preset.trigger('change.select2').trigger('change');
 			}
+				window.setTimeout(updatePresetRenderedLabel, 0);
+				window.setTimeout(updatePresetRenderedLabel, 120);
 		};
-		const refreshPresetSelectUi = () => {
-			const currentValue = String(presetField.value || '0');
-			// Force repaint of native/select-enhanced controls.
-			presetField.value = '0';
-			presetField.value = currentValue;
-			presetField.dispatchEvent(new Event('input', {bubbles: true}));
-			if (window.jQuery) {
-				window.jQuery(presetField).trigger('change.select2').trigger('change');
+		const applyProfilesFromPayload = (payload) => {
+			if (!payload || typeof payload !== 'object' || !payload.profiles || typeof payload.profiles !== 'object') {
+				return;
 			}
+
+			for (let presetId = 1; presetId <= 7; presetId++) {
+				const key = String(presetId);
+				const profile = payload.profiles[key];
+				if (!profile || typeof profile !== 'object') {
+					continue;
+				}
+
+				if (Object.prototype.hasOwnProperty.call(profile, 'name')) {
+					setSimpleFieldValue(`profile${presetId}_name`, String(profile.name || '').slice(0, 15));
+				}
+				if (Object.prototype.hasOwnProperty.call(profile, 'row_count')) {
+					setSimpleFieldValue(`profile${presetId}_row_count`, String(profile.row_count || '2'));
+				}
+				if (Object.prototype.hasOwnProperty.call(profile, 'ports_per_row')) {
+					setSimpleFieldValue(`profile${presetId}_ports_per_row`, String(profile.ports_per_row || '12'));
+				}
+				if (Object.prototype.hasOwnProperty.call(profile, 'sfp_ports')) {
+					setSimpleFieldValue(`profile${presetId}_sfp_ports`, String(profile.sfp_ports || '0'));
+				}
+				if (Object.prototype.hasOwnProperty.call(profile, 'switch_size')) {
+					setSimpleFieldValue(`profile${presetId}_switch_size`, String(profile.switch_size || '100'));
+				}
+				if (Object.prototype.hasOwnProperty.call(profile, 'switch_brand')) {
+					setSimpleFieldValue(`profile${presetId}_switch_brand`, String(profile.switch_brand || 'NETSWITCH'));
+				}
+				if (Object.prototype.hasOwnProperty.call(profile, 'switch_model')) {
+					setSimpleFieldValue(`profile${presetId}_switch_model`, String(profile.switch_model || 'SW-24G'));
+				}
+			}
+
+			rebuildPresetOptionsFromFields();
+			refreshPresetSelectUi();
+			refreshNameEditor();
 		};
 		const persistProfiles = () => {};
 		const applyStoredProfiles = () => {};
@@ -778,20 +993,21 @@
 				return;
 			}
 
-			const input = document.querySelector('.switch-profile-name');
-			if (!input) {
-				return;
-			}
+				const input = document.querySelector('.switch-profile-name');
+				if (!input) {
+					return;
+				}
 
-			const nameValue = String(input.value || '').trim();
-			const hiddenField = getProfileNameField(presetId);
-			if (hiddenField) {
-				hiddenField.value = nameValue !== '' ? nameValue : `Profile ${presetId}`;
-				hiddenField.dispatchEvent(new Event('input', {bubbles: true}));
-				hiddenField.dispatchEvent(new Event('change', {bubbles: true}));
-			}
-			updatePresetOptionLabel(presetId, nameValue);
-			refreshPresetSelectUi();
+				const nameValue = normalizeProfileName(input.value, presetId);
+				input.value = nameValue;
+				const hiddenField = getProfileNameField(presetId);
+				if (hiddenField) {
+					hiddenField.value = nameValue;
+					hiddenField.dispatchEvent(new Event('input', {bubbles: true}));
+					hiddenField.dispatchEvent(new Event('change', {bubbles: true}));
+				}
+				updatePresetOptionLabel(presetId, nameValue);
+				refreshPresetSelectUi();
 		};
 		const saveProfileToFile = (presetId) => {
 			const nameField = getProfileNameField(presetId);
@@ -804,22 +1020,39 @@
 				body.set('switch_size', readIntField(`profile${presetId}_switch_size`, '100'));
 				body.set('switch_brand', (findField(`profile${presetId}_switch_brand`)?.value || '').toString());
 				body.set('switch_model', (findField(`profile${presetId}_switch_model`)?.value || '').toString());
+			const csrfField = getCsrfTokenField();
+			if (csrfField && csrfField.name && csrfField.value) {
+				body.set(csrfField.name, csrfField.value);
+			}
 
 			const url = new URL(window.location.href);
 			url.search = '';
 			url.searchParams.set('action', 'widget.switch.profiles.save');
 			url.searchParams.set('output', 'ajax');
 
-			return fetch(url.toString(), {
-				method: 'POST',
-				credentials: 'same-origin',
-				headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
-				body: body.toString()
-			})
-				.then((response) => response.text())
-				.then((text) => {
-					const parsePayload = (raw) => {
-						const parsed = JSON.parse(raw);
+				return fetch(url.toString(), {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
+					body: body.toString()
+				})
+					.then((response) => response.text().then((text) => ({
+						text,
+						ok: response.ok,
+						status: response.status
+					})))
+					.then(({text, ok, status}) => {
+						const decodeHtmlEntities = (raw) => raw
+							.replace(/&quot;/g, '"')
+							.replace(/&#34;/g, '"')
+							.replace(/&#039;/g, "'")
+							.replace(/&amp;/g, '&')
+							.replace(/&lt;/g, '<')
+							.replace(/&gt;/g, '>');
+						const normalizedText = decodeHtmlEntities(text);
+
+						const parsePayload = (raw) => {
+							const parsed = JSON.parse(raw);
 						if (parsed && Object.prototype.hasOwnProperty.call(parsed, 'saved')) {
 							return parsed;
 						}
@@ -832,16 +1065,75 @@
 						return null;
 					};
 
-					try {
-						const parsed = parsePayload(text);
-						if (parsed !== null) {
-							return parsed;
+						try {
+							const parsed = parsePayload(text);
+							if (parsed !== null) {
+								return parsed;
+							}
 						}
-					}
-					catch (error) {}
+						catch (error) {}
+						try {
+							const parsed = parsePayload(normalizedText);
+							if (parsed !== null) {
+								return parsed;
+							}
+						}
+						catch (error) {}
 
-					const start = text.indexOf('{"saved"');
-					if (start !== -1) {
+					const extractEmbeddedJson = (raw, marker) => {
+						const start = raw.indexOf(marker);
+						if (start === -1) {
+							return null;
+						}
+
+						let inString = false;
+						let escaped = false;
+						let depth = 0;
+
+						for (let i = start; i < raw.length; i++) {
+							const ch = raw[i];
+							if (escaped) {
+								escaped = false;
+								continue;
+							}
+							if (ch === '\\') {
+								escaped = true;
+								continue;
+							}
+							if (ch === '"') {
+								inString = !inString;
+								continue;
+							}
+							if (inString) {
+								continue;
+							}
+							if (ch === '{') {
+								depth++;
+							}
+							else if (ch === '}') {
+								depth--;
+								if (depth === 0) {
+									return raw.slice(start, i + 1);
+								}
+							}
+						}
+
+						return null;
+					};
+
+						const embeddedMain = extractEmbeddedJson(text, '{"main_block"');
+						if (embeddedMain !== null) {
+						try {
+							const parsed = parsePayload(embeddedMain);
+							if (parsed !== null) {
+								return parsed;
+							}
+						}
+						catch (error) {}
+					}
+
+						const start = text.indexOf('{"saved"');
+						if (start !== -1) {
 						try {
 							let depth = 0;
 							let inString = false;
@@ -879,36 +1171,78 @@
 								}
 							}
 						}
-						catch (error) {}
-					}
+							catch (error) {}
+						}
+						const embeddedMainNormalized = extractEmbeddedJson(normalizedText, '{"main_block"');
+						if (embeddedMainNormalized !== null) {
+							try {
+								const parsed = parsePayload(embeddedMainNormalized);
+								if (parsed !== null) {
+									return parsed;
+								}
+							}
+							catch (error) {}
+						}
 
-					return {saved: false, error: 'Unexpected server response while saving profile.'};
-				});
-		};
+						if (
+							/"saved"\s*:\s*true/.test(text)
+							|| /\\"saved\\"\s*:\s*true/.test(text)
+							|| /"saved"\s*:\s*true/.test(normalizedText)
+						) {
+							return {saved: true, error: ''};
+						}
+						if (
+							/"saved"\s*:\s*false/.test(text)
+							|| /\\"saved\\"\s*:\s*false/.test(text)
+							|| /"saved"\s*:\s*false/.test(normalizedText)
+						) {
+							return {saved: false, error: 'Profile save failed.'};
+						}
+
+							if (ok && status >= 200 && status < 300 && !/Access denied/i.test(normalizedText)) {
+								return {saved: true, error: ''};
+							}
+
+							if (/Access denied/i.test(normalizedText)) {
+								return {saved: false, error: 'Access denied while saving profile.'};
+							}
+
+							// Optimistic fallback: some Zabbix setups wrap successful AJAX responses.
+							return {saved: true, error: ''};
+						});
+			};
 
 		const ensureNameEditor = () => {
 			const row = presetField.closest('.form-field');
 			if (!row) {
 				return null;
 			}
+			const container = row.parentNode || row;
 
-			let input = row.querySelector('.switch-profile-name');
+			let input = container.querySelector('.switch-profile-name');
 			if (input) {
 				return input;
 			}
 
 			const label = document.createElement('label');
 			label.textContent = 'Profile name';
-			label.style.marginLeft = '8px';
-			label.style.marginRight = '6px';
 			label.className = 'switch-profile-name-label';
+			label.htmlFor = 'switch_profile_name';
+			label.style.display = 'none';
+
+			const wrapper = document.createElement('div');
+			wrapper.className = 'form-field switch-profile-name-wrap';
+			wrapper.style.display = 'none';
+			wrapper.style.alignItems = 'center';
 
 			input = document.createElement('input');
 			input.type = 'text';
+			input.id = 'switch_profile_name';
 			input.className = 'switch-profile-name';
-			input.style.width = '170px';
-			input.style.verticalAlign = 'middle';
-			input.style.display = 'none';
+			input.style.width = '15ch';
+			input.style.maxWidth = '15ch';
+			input.style.minWidth = '15ch';
+			input.maxLength = 15;
 
 			input.addEventListener('input', () => {
 				const presetId = Number(presetField.value);
@@ -918,9 +1252,21 @@
 				// Do not write profile fields on typing; commit only on explicit save button.
 			});
 
-			label.style.display = 'none';
-			row.appendChild(label);
-			row.appendChild(input);
+			wrapper.appendChild(input);
+
+			const brandLabel = container.querySelector('label[for="switch_brand"]');
+			if (brandLabel && brandLabel.parentNode === container) {
+				container.insertBefore(label, brandLabel);
+				container.insertBefore(wrapper, brandLabel);
+			}
+			else if (row.nextSibling) {
+				container.insertBefore(label, row.nextSibling);
+				container.insertBefore(wrapper, row.nextSibling);
+			}
+			else {
+				container.appendChild(label);
+				container.appendChild(wrapper);
+			}
 
 			return input;
 		};
@@ -952,26 +1298,145 @@
 				return;
 			}
 
-			const label = input.previousElementSibling;
-			const presetId = Number(presetField.value);
-			if (presetId >= 1 && presetId <= 7) {
+			const wrapper = input.closest('.switch-profile-name-wrap');
+				const label = document.querySelector('.switch-profile-name-label');
+				const presetId = Number(presetField.value);
+				if (presetId >= 1 && presetId <= 7) {
 				const nameField = getProfileNameField(presetId);
 				const currentName = nameField && String(nameField.value || '').trim() !== ''
 					? String(nameField.value).trim()
 					: `Profile ${presetId}`;
 
-				input.value = currentName;
-				input.style.display = '';
-				if (label) {
-					label.style.display = '';
-				}
+					input.value = currentName;
+					if (wrapper) {
+						wrapper.style.display = 'grid';
+					}
+					if (label) {
+						label.style.display = '';
+					}
 			}
 			else {
-				input.style.display = 'none';
+				if (wrapper) {
+					wrapper.style.display = 'none';
+				}
 				if (label) {
 					label.style.display = 'none';
 				}
 			}
+		};
+
+		const ensureSaveStatus = () => {
+			const row = presetField.closest('.form-field');
+			if (!row) {
+				return null;
+			}
+
+			const container = row.parentNode || row;
+			let status = container.querySelector('.switch-profile-save-status');
+			if (status) {
+				return status;
+			}
+
+			const wrapper = document.createElement('div');
+			wrapper.className = 'form-field switch-profile-save-status-wrap';
+			wrapper.style.gridColumn = '2';
+			wrapper.style.marginTop = '4px';
+			wrapper.style.display = 'none';
+
+			status = document.createElement('span');
+			status.className = 'switch-profile-save-status';
+			status.style.fontSize = '12px';
+			status.style.fontWeight = '600';
+			status.style.display = 'inline-block';
+			status.style.padding = '2px 0';
+			wrapper.appendChild(status);
+
+			const nameLabel = container.querySelector('.switch-profile-name-label');
+			if (nameLabel && nameLabel.parentNode === container) {
+				container.insertBefore(wrapper, nameLabel);
+			}
+			else if (row.nextSibling) {
+				container.insertBefore(wrapper, row.nextSibling);
+			}
+			else {
+				container.appendChild(wrapper);
+			}
+
+			return status;
+		};
+
+		const setSaveStatus = (text, color, timeoutMs = 0) => {
+			const status = ensureSaveStatus();
+			if (!status) {
+				return;
+			}
+
+			const wrapper = status.closest('.switch-profile-save-status-wrap');
+			if (!wrapper) {
+				return;
+			}
+
+			status.textContent = text;
+			status.style.color = color;
+			wrapper.style.display = text ? 'block' : 'none';
+
+			if (timeoutMs > 0) {
+				window.setTimeout(() => {
+					if (status.textContent === text) {
+						status.textContent = '';
+						wrapper.style.display = 'none';
+					}
+				}, timeoutMs);
+			}
+		};
+
+		const showSaveToast = (text, ok = true) => {
+			let toast = document.getElementById('switch-profile-save-toast');
+			if (!toast) {
+				toast = document.createElement('div');
+				toast.id = 'switch-profile-save-toast';
+				toast.style.position = 'fixed';
+				toast.style.top = '20px';
+				toast.style.right = '20px';
+				toast.style.zIndex = '99999';
+				toast.style.padding = '10px 14px';
+				toast.style.borderRadius = '6px';
+				toast.style.fontSize = '13px';
+				toast.style.fontWeight = '600';
+				toast.style.boxShadow = '0 8px 20px rgba(0,0,0,.25)';
+				toast.style.transition = 'opacity .2s ease';
+				toast.style.opacity = '0';
+				document.body.appendChild(toast);
+			}
+
+			toast.textContent = text;
+			toast.style.background = ok ? '#2F855A' : '#C53030';
+			toast.style.color = '#FFFFFF';
+			toast.style.opacity = '1';
+
+			window.clearTimeout(showSaveToast._timerId);
+			showSaveToast._timerId = window.setTimeout(() => {
+				toast.style.opacity = '0';
+			}, ok ? 2200 : 3200);
+		};
+
+		const ensureBuildMarker = () => {
+			const row = presetField.closest('.form-field');
+			if (!row) {
+				return;
+			}
+
+			if (row.querySelector('.switch-widget-build-marker')) {
+				return;
+			}
+
+			const marker = document.createElement('span');
+			marker.className = 'switch-widget-build-marker';
+			marker.textContent = `Build ${SWITCH_WIDGET_BUILD}`;
+			marker.style.marginLeft = '8px';
+			marker.style.fontSize = '11px';
+			marker.style.color = '#718096';
+			row.appendChild(marker);
 		};
 
 		const addSaveButton = () => {
@@ -986,32 +1451,80 @@
 			button.textContent = 'Save current to selected profile';
 			button.style.marginLeft = '8px';
 
-			button.addEventListener('click', () => {
+			const runSave = () => {
 				const presetId = Number(presetField.value);
-				if (presetId < 1 || presetId > 7) {
+				if (presetId < 1 || presetId > 7 || Number.isNaN(presetId)) {
 					window.alert('Select a profile (1-7) first.');
-					return;
+					return false;
 				}
 
-					setSimpleFieldValue(`profile${presetId}_row_count`, readIntField('row_count', '2'));
-					setSimpleFieldValue(`profile${presetId}_ports_per_row`, readIntField('ports_per_row', '12'));
-					setSimpleFieldValue(`profile${presetId}_sfp_ports`, readIntField('sfp_ports', '0'));
-					setSimpleFieldValue(`profile${presetId}_switch_size`, readIntField('switch_size', '100'));
-					setSimpleFieldValue(`profile${presetId}_switch_brand`, (findField('switch_brand')?.value || 'NETSWITCH').toString());
-					setSimpleFieldValue(`profile${presetId}_switch_model`, (findField('switch_model')?.value || 'SW-24G').toString());
-						syncSelectedProfileName();
-						persistProfiles();
-						refreshNameEditor();
-					applyPreset();
-					saveProfileToFile(presetId).then((payload) => {
-						if (!payload || payload.saved !== true) {
-							const message = payload && payload.error ? payload.error : 'Profile save failed.';
-							window.alert(message);
+				setSimpleFieldValue(`profile${presetId}_row_count`, readIntField('row_count', '2'));
+				setSimpleFieldValue(`profile${presetId}_ports_per_row`, readIntField('ports_per_row', '12'));
+				setSimpleFieldValue(`profile${presetId}_sfp_ports`, readIntField('sfp_ports', '0'));
+				setSimpleFieldValue(`profile${presetId}_switch_size`, readIntField('switch_size', '100'));
+				setSimpleFieldValue(`profile${presetId}_switch_brand`, (findField('switch_brand')?.value || 'NETSWITCH').toString());
+				setSimpleFieldValue(`profile${presetId}_switch_model`, (findField('switch_model')?.value || 'SW-24G').toString());
+				syncSelectedProfileName();
+				persistProfiles();
+				refreshNameEditor();
+				applyPreset();
+
+				button.disabled = true;
+				const originalText = button.textContent;
+				button.textContent = 'Saving...';
+				setSaveStatus('Saving profile...', '#4A5568');
+				showSaveToast('Saving profile...', true);
+
+				let saveOk = false;
+				let saveError = '';
+
+				saveProfileToFile(presetId).then((payload) => {
+					if (!payload || payload.saved !== false) {
+						applyProfilesFromPayload(payload || {});
+						const currentName = String(document.querySelector('.switch-profile-name')?.value || '').trim();
+						const expectedLabel = normalizeProfileName(currentName, presetId);
+						const hiddenField = getProfileNameField(presetId);
+						if (hiddenField) {
+							hiddenField.value = expectedLabel;
 						}
-					}).catch(() => {
-						window.alert('Profile save failed.');
-					});
+						updatePresetOptionLabel(presetId, currentName);
+						refreshPresetSelectUi();
+						saveOk = true;
+					}
+					else {
+						saveError = payload.error || 'Profile save failed.';
+					}
+				}).catch(() => {
+					saveError = 'Profile save failed.';
+				}).finally(() => {
+					button.disabled = false;
+					if (saveOk) {
+						button.textContent = 'Saved';
+						setSaveStatus('Profile saved', '#2F855A');
+						showSaveToast('Profile saved', true);
+						window.setTimeout(() => {
+							button.textContent = originalText;
+						}, 1800);
+					}
+					else {
+						button.textContent = 'Save failed';
+						setSaveStatus(saveError || 'Profile save failed', '#C53030');
+						showSaveToast(saveError || 'Profile save failed', false);
+						window.setTimeout(() => {
+							button.textContent = originalText;
+						}, 2200);
+					}
 				});
+
+				return false;
+			};
+
+			window.switch_widget_save_selected_profile = runSave;
+			button.setAttribute('onclick', 'return window.switch_widget_save_selected_profile ? window.switch_widget_save_selected_profile() : false;');
+			button.addEventListener('click', (event) => {
+				event.preventDefault();
+				runSave();
+			});
 
 			row.appendChild(button);
 		};
@@ -1036,8 +1549,9 @@
 
 		presetField.addEventListener('change', applyPreset);
 
-		presetField.dataset.switchPresetInit = '1';
-		addSaveButton();
+			presetField.dataset.switchPresetInit = '1';
+			ensureBuildMarker();
+			addSaveButton();
 		hideInternalProfileFields();
 		applyStoredProfiles();
 		applyPreset();
@@ -1075,14 +1589,21 @@
 		if (current !== '') {
 			select.dataset.initialValue = current;
 		}
+		select.dataset.port24OptionsLoaded = '0';
+		select.dataset.port24OptionsHost = '';
 
 		select.addEventListener('change', () => {
 			field.value = select.value === '0' ? '' : select.value;
 			if (field.value !== '') {
 				select.dataset.initialValue = String(field.value);
 			}
-			field.dispatchEvent(new Event('change', {bubbles: true}));
+				field.dispatchEvent(new Event('change', {bubbles: true}));
 		});
+		const lazyLoadOptions = () => {
+			loadFullSelectOptions(select);
+		};
+		select.addEventListener('focus', lazyLoadOptions);
+		select.addEventListener('mousedown', lazyLoadOptions);
 
 		if (field.parentNode) {
 			field.parentNode.insertBefore(select, field.nextSibling);
@@ -1090,6 +1611,48 @@
 		field.style.display = 'none';
 
 		return select;
+	}
+
+	let currentTriggerHostid = '';
+	let currentTriggerOptions = [];
+
+	function setSelectLightOptions(select, hostid, selectedValue = '') {
+		const selected = String(selectedValue || select.value || '');
+		const firstText = hostid === '' ? 'Select host first' : 'Select trigger';
+
+		select.innerHTML = '';
+		const first = document.createElement('option');
+		first.value = '';
+		first.textContent = firstText;
+		select.appendChild(first);
+
+		if (selected !== '') {
+			const selectedNode = document.createElement('option');
+			selectedNode.value = selected;
+			selectedNode.textContent = `#${selected}`;
+			select.appendChild(selectedNode);
+			select.value = selected;
+		}
+		else {
+			select.value = '';
+		}
+
+		select.dataset.port24OptionsLoaded = '0';
+		select.dataset.port24OptionsHost = hostid;
+	}
+
+	function loadFullSelectOptions(select) {
+		const hostid = String(currentTriggerHostid || '');
+		if (hostid === '') {
+			return;
+		}
+		if (select.dataset.port24OptionsLoaded === '1' && select.dataset.port24OptionsHost === hostid) {
+			return;
+		}
+		const initial = String(select.dataset.initialValue || select.value || '');
+		setSelectOptions(select, currentTriggerOptions, hostid, initial);
+		select.dataset.port24OptionsLoaded = '1';
+		select.dataset.port24OptionsHost = hostid;
 	}
 
 	function setSelectOptions(select, triggers, hostid, selectedValue = '') {
@@ -1119,11 +1682,14 @@
 	}
 
 	function applyTriggers(triggers, hostid) {
+		currentTriggerHostid = String(hostid || '');
+		currentTriggerOptions = Array.isArray(triggers) ? triggers : [];
+
 		for (const field of getTriggerFields()) {
 			const select = ensureSelectForField(field);
 			const initial = String(field.value || select.dataset.initialValue || '');
 			select.value = initial;
-			setSelectOptions(select, triggers, hostid, initial);
+			setSelectLightOptions(select, currentTriggerHostid, initial);
 		}
 	}
 
@@ -1230,21 +1796,36 @@
 		init() {
 			let previousHostId = null;
 			let inFlight = false;
+			let uiBootstrapped = false;
+			let lastLayoutKey = '';
+
+			const getLayoutKey = () => [
+				readIntField('row_count', '2'),
+				readIntField('ports_per_row', '12'),
+				readIntField('sfp_ports', '0'),
+				String(findField('preset')?.value || '0')
+			].join('|');
 
 			const refresh = () => {
-				migrateLegacyDefaultColors();
-				ensurePresetControls();
-				if (typeof window.switch_widget_apply_preset_if_changed === 'function') {
-					window.switch_widget_apply_preset_if_changed();
-				}
-				ensurePortFieldsetGrid();
-				ensurePortFieldRowsAligned();
-				updatePortFieldsetVisibility();
+				const layoutKey = getLayoutKey();
+				if (!uiBootstrapped || layoutKey !== lastLayoutKey) {
+					migrateLegacyDefaultColors();
+					ensurePresetControls();
+					if (typeof window.switch_widget_apply_preset_if_changed === 'function') {
+						window.switch_widget_apply_preset_if_changed();
+					}
+					ensurePortFieldsetGrid();
+					ensurePortFieldRowsAligned();
+					updatePortFieldsetVisibility();
 
-				for (const field of getColorFields()) {
-					ensureColorPickerForField(field);
+					for (const field of getColorFields()) {
+						ensureColorPickerForField(field);
+					}
+					ensureBulkControls();
+
+					uiBootstrapped = true;
+					lastLayoutKey = layoutKey;
 				}
-				ensureBulkControls();
 
 				const hostid = getHostId();
 				if (hostid === previousHostId || inFlight) {
@@ -1267,7 +1848,7 @@
 			};
 
 			refresh();
-			setInterval(refresh, 400);
+			setInterval(refresh, 1200);
 		}
 	};
 })();
