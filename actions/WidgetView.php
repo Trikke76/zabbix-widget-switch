@@ -11,6 +11,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 	private const DEFAULT_PORTS_PER_ROW = 12;
 	private const DEFAULT_TRAFFIC_IN_PATTERN = 'ifInOctets[*]';
 	private const DEFAULT_TRAFFIC_OUT_PATTERN = 'ifOutOctets[*]';
+	private const DEFAULT_SPEED_PATTERN = 'ifHighSpeed[*]';
+	private const MAX_SPEED_PATTERN_LENGTH = 30;
 	private const TRAFFIC_POINTS = 24;
 	private const TRAFFIC_LOOKBACK_SECONDS = 1800;
 	private const MAX_ROW_COUNT = 24;
@@ -22,6 +24,40 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$hostid = $this->extractHostId();
 		$traffic_in_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['traffic_in_item_pattern'] ?? self::DEFAULT_TRAFFIC_IN_PATTERN), self::DEFAULT_TRAFFIC_IN_PATTERN);
 		$traffic_out_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['traffic_out_item_pattern'] ?? self::DEFAULT_TRAFFIC_OUT_PATTERN), self::DEFAULT_TRAFFIC_OUT_PATTERN);
+		$speed_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['speed_item_pattern'] ?? self::DEFAULT_SPEED_PATTERN), self::DEFAULT_SPEED_PATTERN);
+		$speed_pattern = substr($speed_pattern, 0, self::MAX_SPEED_PATTERN_LENGTH);
+		$speed_pattern_alt = $this->getAlternateSpeedPattern($speed_pattern);
+		$port_color_mode_raw = $this->fields_values['port_color_mode'] ?? 0;
+		if (is_array($port_color_mode_raw)) {
+			$port_color_mode_raw = reset($port_color_mode_raw);
+		}
+		$port_color_mode_int = (int) $port_color_mode_raw;
+		$port_color_mode = ($port_color_mode_int === 1 || (string) $port_color_mode_raw === 'utilization')
+			? 1
+			: 0;
+		$utilization_overlay_enabled = ((int) ($this->fields_values['utilization_overlay_enabled'] ?? 1)) === 1 ? 1 : 0;
+		$util_low_threshold = $this->clampFloat($this->extractFloat($this->fields_values['utilization_low_threshold'] ?? 5.0), 0.0, 100.0);
+		$util_warn_threshold = $this->clampFloat($this->extractFloat($this->fields_values['utilization_warn_threshold'] ?? 40.0), 0.0, 100.0);
+		$util_high_threshold = $this->clampFloat($this->extractFloat($this->fields_values['utilization_high_threshold'] ?? 70.0), 0.0, 100.0);
+		if ($util_warn_threshold < $util_low_threshold) {
+			$util_warn_threshold = $util_low_threshold;
+		}
+		if ($util_high_threshold < $util_warn_threshold) {
+			$util_high_threshold = $util_warn_threshold;
+		}
+		$util_low_color = $this->safeColor((string) ($this->fields_values['utilization_low_color'] ?? '#22C55E'), '#22C55E');
+		$util_warn_color = $this->safeColor((string) ($this->fields_values['utilization_warn_color'] ?? '#FCD34D'), '#FCD34D');
+		$util_high_color = $this->safeColor((string) ($this->fields_values['utilization_high_color'] ?? '#DB2777'), '#DB2777');
+		$util_na_color = $this->safeColor((string) ($this->fields_values['utilization_na_color'] ?? '#94a3b8'), '#94A3B8');
+		$legend_text = trim((string) ($this->fields_values['legend_text'] ?? ''));
+		if ($legend_text === '') {
+			$legend_text = sprintf(
+				'Heatmap: green < %1$s%%, low >= %1$s%%, warn >= %2$s%%, high >= %3$s%%',
+				$this->formatThreshold($util_low_threshold),
+				$this->formatThreshold($util_warn_threshold),
+				$this->formatThreshold($util_high_threshold)
+			);
+		}
 		$ports = $this->loadPortsFromFields($layout['total_ports']);
 		$trigger_meta = $this->loadTriggerMeta($ports);
 		$widget_name = trim((string) $this->getInput('name', ''));
@@ -39,9 +75,19 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$this->setResponse(new CControllerResponseData([
 				'name' => $widget_name,
 				'access_denied' => true,
-				'legend_text' => trim((string) ($this->fields_values['legend_text'] ?? '')),
+				'legend_text' => $legend_text,
 				'traffic_in_item_pattern' => $traffic_in_pattern,
 				'traffic_out_item_pattern' => $traffic_out_pattern,
+				'speed_item_pattern' => $speed_pattern,
+				'port_color_mode' => $port_color_mode,
+				'utilization_overlay_enabled' => $utilization_overlay_enabled,
+				'utilization_low_threshold' => $util_low_threshold,
+				'utilization_warn_threshold' => $util_warn_threshold,
+				'utilization_high_threshold' => $util_high_threshold,
+				'utilization_low_color' => $util_low_color,
+				'utilization_warn_color' => $util_warn_color,
+				'utilization_high_color' => $util_high_color,
+				'utilization_na_color' => $util_na_color,
 				'hostid' => $hostid,
 				'legend_size' => $this->clamp(
 					$this->extractPositiveInt($this->fields_values['legend_size'] ?? 14),
@@ -74,15 +120,6 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$meta = $triggerid !== '' ? ($trigger_meta[$triggerid] ?? null) : null;
 			$is_problem = $meta !== null ? $meta['is_problem'] : false;
 			$has_trigger = ($triggerid !== '' && $meta !== null);
-			if (!$has_trigger) {
-				$port['active_color'] = $port['default_color'];
-			}
-			elseif ($is_problem) {
-				$port['active_color'] = $port['trigger_color'];
-			}
-			else {
-				$port['active_color'] = $port['trigger_ok_color'];
-			}
 			$port['is_problem'] = $is_problem;
 			$port['has_trigger'] = $has_trigger;
 			$port['url'] = $triggerid !== ''
@@ -93,21 +130,85 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$port['hostid'] = $hostid;
 			$port['traffic_in_item_key'] = $this->resolvePortItemKey($traffic_in_pattern, $index + 1);
 			$port['traffic_out_item_key'] = $this->resolvePortItemKey($traffic_out_pattern, $index + 1);
+			$port['speed_item_key'] = $this->resolvePortItemKey($speed_pattern, $index + 1);
+			$port['speed_item_key_alt'] = $this->resolvePortItemKey($speed_pattern_alt, $index + 1);
 		}
 		unset($port);
 		$traffic_series = $this->loadTrafficSeries($hostid, $ports);
+		$speed_values = $this->loadLatestItemValues($hostid, array_values(array_unique(array_filter(array_map(
+			static fn(array $port): string => (string) ($port['speed_item_key'] ?? ''),
+			$ports
+		), static fn(string $key): bool => $key !== ''))));
+		$speed_values_alt = $this->loadLatestItemValues($hostid, array_values(array_unique(array_filter(array_map(
+			static fn(array $port): string => (string) ($port['speed_item_key_alt'] ?? ''),
+			$ports
+		), static fn(string $key): bool => $key !== ''))));
+
 		foreach ($ports as &$port) {
 			$port['traffic_in_series'] = $traffic_series[$port['traffic_in_item_key']] ?? [];
 			$port['traffic_out_series'] = $traffic_series[$port['traffic_out_item_key']] ?? [];
+			$in_last = $port['traffic_in_series'] !== []
+				? (float) $port['traffic_in_series'][count($port['traffic_in_series']) - 1]
+				: 0.0;
+			$out_last = $port['traffic_out_series'] !== []
+				? (float) $port['traffic_out_series'][count($port['traffic_out_series']) - 1]
+				: 0.0;
+			$traffic_bps = max($in_last, $out_last) * 8.0;
+			$speed_key_used = (string) ($port['speed_item_key'] ?? '');
+			$speed_raw = (float) ($speed_values[$speed_key_used] ?? 0.0);
+			if ($speed_raw <= 0.0) {
+				$speed_key_alt = (string) ($port['speed_item_key_alt'] ?? '');
+				if ($speed_key_alt !== '') {
+					$speed_key_used = $speed_key_alt;
+					$speed_raw = (float) ($speed_values_alt[$speed_key_alt] ?? 0.0);
+				}
+			}
+			$speed_bps = $this->toSpeedBps($speed_raw, $speed_key_used);
+			$utilization = ($speed_bps > 0.0) ? (($traffic_bps / $speed_bps) * 100.0) : null;
+			$port['utilization_percent'] = $utilization;
+			if ($utilization === null) {
+				$port['utilization_color'] = $util_na_color;
+			}
+			elseif ($utilization >= $util_high_threshold) {
+				$port['utilization_color'] = $util_high_color;
+			}
+			elseif ($utilization >= $util_warn_threshold) {
+				$port['utilization_color'] = $util_warn_color;
+			}
+			elseif ($utilization >= $util_low_threshold) {
+				$port['utilization_color'] = $util_low_color;
+			}
+			else {
+				$port['utilization_color'] = '#22C55E';
+			}
+			if (!$port['has_trigger']) {
+				$port['active_color'] = $port['default_color'];
+			}
+			elseif ($port['is_problem']) {
+				$port['active_color'] = $port['trigger_color'];
+			}
+			else {
+				$port['active_color'] = $port['trigger_ok_color'];
+			}
 		}
 		unset($port);
 
 			$this->setResponse(new CControllerResponseData([
 				'name' => $widget_name,
 				'access_denied' => false,
-				'legend_text' => trim((string) ($this->fields_values['legend_text'] ?? '')),
+				'legend_text' => $legend_text,
 				'traffic_in_item_pattern' => $traffic_in_pattern,
 				'traffic_out_item_pattern' => $traffic_out_pattern,
+				'speed_item_pattern' => $speed_pattern,
+				'port_color_mode' => $port_color_mode,
+				'utilization_overlay_enabled' => $utilization_overlay_enabled,
+				'utilization_low_threshold' => $util_low_threshold,
+				'utilization_warn_threshold' => $util_warn_threshold,
+				'utilization_high_threshold' => $util_high_threshold,
+				'utilization_low_color' => $util_low_color,
+				'utilization_warn_color' => $util_warn_color,
+				'utilization_high_color' => $util_high_color,
+				'utilization_na_color' => $util_na_color,
 				'hostid' => $hostid,
 				'legend_size' => $this->clamp(
 					$this->extractPositiveInt($this->fields_values['legend_size'] ?? 14),
@@ -270,6 +371,37 @@ class WidgetView extends CControllerDashboardWidgetView {
 		return max($min, min($max, $value));
 	}
 
+	private function clampFloat(float $value, float $min, float $max): float {
+		return max($min, min($max, $value));
+	}
+
+	private function extractFloat($value): float {
+		if (is_array($value)) {
+			$value = reset($value);
+		}
+
+		if (is_int($value) || is_float($value)) {
+			return (float) $value;
+		}
+
+		if (!is_scalar($value)) {
+			return 0.0;
+		}
+
+		$text = str_replace(',', '.', trim((string) $value));
+		if ($text === '' || !is_numeric($text)) {
+			return 0.0;
+		}
+
+		return (float) $text;
+	}
+
+	private function formatThreshold(float $value): string {
+		$text = number_format($value, 2, '.', '');
+		$text = rtrim(rtrim($text, '0'), '.');
+		return $text !== '' ? $text : '0';
+	}
+
 	private function sanitizeItemPattern(string $value, string $fallback): string {
 		$value = trim($value);
 		if ($value === '') {
@@ -277,6 +409,18 @@ class WidgetView extends CControllerDashboardWidgetView {
 		}
 
 		return substr($value, 0, 255);
+	}
+
+	private function getAlternateSpeedPattern(string $pattern): string {
+		if (stripos($pattern, 'ifhighspeed') !== false) {
+			return preg_replace('/ifhighspeed/i', 'ifSpeed', $pattern) ?? $pattern;
+		}
+
+		if (stripos($pattern, 'ifspeed') !== false) {
+			return preg_replace('/ifspeed/i', 'ifHighSpeed', $pattern) ?? $pattern;
+		}
+
+		return $pattern;
 	}
 
 	private function resolvePortItemKey(string $pattern, int $port_index): string {
@@ -344,6 +488,60 @@ class WidgetView extends CControllerDashboardWidgetView {
 		}
 
 		return $result;
+	}
+
+	private function loadLatestItemValues(string $hostid, array $keys): array {
+		if ($hostid === '' || $keys === []) {
+			return [];
+		}
+
+		$rows = API::Item()->get([
+			'output' => ['key_', 'lastvalue'],
+			'hostids' => [$hostid],
+			'filter' => ['key_' => $keys]
+		]);
+
+		$result = [];
+		foreach ($rows as $row) {
+			$key = (string) ($row['key_'] ?? '');
+			if ($key === '') {
+				continue;
+			}
+
+			$result[$key] = $this->toFloat($row['lastvalue'] ?? 0);
+		}
+
+		return $result;
+	}
+
+	private function toFloat($value): float {
+		if (is_int($value) || is_float($value)) {
+			return (float) $value;
+		}
+
+		if (!is_string($value)) {
+			return 0.0;
+		}
+
+		$text = trim($value);
+		if ($text === '') {
+			return 0.0;
+		}
+
+		return is_numeric($text) ? (float) $text : 0.0;
+	}
+
+	private function toSpeedBps(float $speed_value, string $speed_key): float {
+		if ($speed_value <= 0.0) {
+			return 0.0;
+		}
+
+		// Common pattern: ifHighSpeed is in Mbit/s, ifSpeed is in bit/s.
+		if (stripos($speed_key, 'ifhighspeed') !== false) {
+			return $speed_value * 1000000.0;
+		}
+
+		return $speed_value;
 	}
 
 	private function extractHostId(): string {

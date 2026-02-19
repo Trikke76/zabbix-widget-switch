@@ -1,5 +1,5 @@
 (function() {
-	const SWITCH_WIDGET_BUILD = '1.0.6';
+	const SWITCH_WIDGET_BUILD = String(window.SWITCH_WIDGET_BUILD || 'dev');
 
 	function getNumericValue(value) {
 		const text = String(value || '').trim();
@@ -128,6 +128,18 @@
 
 	function getColorFallback(field) {
 		const token = `${field.name || ''} ${field.id || ''}`;
+		if (/utilization_low_color/.test(token)) {
+			return '#22C55E';
+		}
+		if (/utilization_warn_color/.test(token)) {
+			return '#FCD34D';
+		}
+		if (/utilization_high_color/.test(token)) {
+			return '#DB2777';
+		}
+		if (/utilization_na_color/.test(token)) {
+			return '#94A3B8';
+		}
 		if (/trigger_ok_color/.test(token)) {
 			return '#22C55E';
 		}
@@ -137,7 +149,145 @@
 		return '#D1D5DB';
 	}
 
+	function ensureUtilizationControls() {
+		const legendField = findField('legend_text');
+		const lowField = findField('utilization_low_threshold');
+		const warnField = findField('utilization_warn_threshold');
+		const highField = findField('utilization_high_threshold');
+		const defaultLegendText = () => {
+			const low = String(lowField?.value || '5').trim() || '5';
+			const warn = String(warnField?.value || '40').trim() || '40';
+			const high = String(highField?.value || '70').trim() || '70';
+			return `Heatmap: green < ${low}%, low >= ${low}%, warn >= ${warn}%, high >= ${high}%`;
+		};
+		if (legendField && String(legendField.value || '').trim() === '') {
+			legendField.value = defaultLegendText();
+			legendField.dispatchEvent(new Event('input', {bubbles: true}));
+			legendField.dispatchEvent(new Event('change', {bubbles: true}));
+		}
+
+		const speedField = findField('speed_item_pattern');
+		if (speedField && speedField.dataset.port24SpeedPatternInit !== '1') {
+			speedField.maxLength = 30;
+			speedField.style.width = '260px';
+			speedField.style.maxWidth = '260px';
+			speedField.dataset.port24SpeedPatternInit = '1';
+		}
+		const patternFieldNames = [
+			'name',
+			'traffic_in_item_pattern',
+			'traffic_out_item_pattern'
+		];
+		for (const name of patternFieldNames) {
+			const field = findField(name);
+			if (!field || field.dataset.port24TrafficPatternInit === '1') {
+				continue;
+			}
+			field.style.width = '260px';
+			field.style.maxWidth = '260px';
+			field.dataset.port24TrafficPatternInit = '1';
+		}
+
+		const thresholdFieldNames = [
+			'utilization_low_threshold',
+			'utilization_warn_threshold',
+			'utilization_high_threshold'
+		];
+		for (const name of thresholdFieldNames) {
+			const field = findField(name);
+			if (!field || field.dataset.port24UtilThresholdInit === '1') {
+				continue;
+			}
+
+			field.maxLength = 4;
+			field.style.width = '72px';
+			field.style.maxWidth = '72px';
+			field.style.textAlign = 'right';
+			field.placeholder = '0-100';
+			field.addEventListener('input', () => {
+				let text = String(field.value || '').replace(',', '.');
+				text = text.replace(/[^0-9.]/g, '');
+				const firstDot = text.indexOf('.');
+				if (firstDot !== -1) {
+					text = text.slice(0, firstDot + 1) + text.slice(firstDot + 1).replace(/\./g, '');
+				}
+				if (text.length > 4) {
+					text = text.slice(0, 4);
+				}
+				field.value = text;
+			});
+			field.dataset.port24UtilThresholdInit = '1';
+		}
+
+		const colorFieldNames = [
+			'utilization_low_color',
+			'utilization_warn_color',
+			'utilization_high_color',
+			'utilization_na_color'
+		];
+		for (const name of colorFieldNames) {
+			const field = findField(name);
+			if (!field) {
+				continue;
+			}
+			ensureModernPickerForField(field);
+			field.maxLength = 7;
+			field.style.width = '72px';
+			field.style.maxWidth = '72px';
+		}
+	}
+
+	function ensureModernPickerForField(field) {
+		if (field.dataset.port24ModernColorInit === '1') {
+			return;
+		}
+
+		const parent = field.parentNode;
+		if (!parent) {
+			return;
+		}
+
+		const fallback = getColorFallback(field);
+		field.value = normalizeHexColor(field.value, fallback);
+
+		const picker = createModernBulkPicker(field.value);
+		const holder = document.createElement('span');
+		holder.style.display = 'inline-flex';
+		holder.style.marginLeft = '8px';
+		holder.style.verticalAlign = 'middle';
+		holder.appendChild(picker.element);
+
+		parent.insertBefore(holder, field.nextSibling);
+		field._port24ModernPicker = picker;
+
+		picker.element.addEventListener('port24-color-change', (event) => {
+			const value = normalizeHexColor(event.detail?.value, fallback);
+			field.value = value;
+			field.dispatchEvent(new Event('input', {bubbles: true}));
+			field.dispatchEvent(new Event('change', {bubbles: true}));
+		});
+
+		field.addEventListener('input', () => {
+			const normalized = normalizeHexColor(field.value, fallback);
+			field.value = normalized;
+			picker.setValue(normalized, false);
+		});
+
+		field.dataset.port24ModernColorInit = '1';
+		field.dataset.port24ColorInit = '1';
+	}
+
 	function ensureColorPickerForField(field) {
+		const token = `${field.name || ''} ${field.id || ''}`;
+		if (/port\d+_(default_color|trigger_ok_color|trigger_color)/.test(token)) {
+			ensureNativeColorPickerForField(field);
+			return;
+		}
+
+		ensureModernPickerForField(field);
+	}
+
+	function ensureNativeColorPickerForField(field) {
 		if (field.dataset.port24ColorInit === '1') {
 			return;
 		}
@@ -196,6 +346,9 @@
 			: null;
 		if (picker) {
 			picker.value = normalized;
+		}
+		if (field._port24ModernPicker && typeof field._port24ModernPicker.setValue === 'function') {
+			field._port24ModernPicker.setValue(normalized, false);
 		}
 
 		if (dispatchEvents) {
@@ -329,10 +482,15 @@
 
 		let value = normalizeHexColor(initialColor, '#D1D5DB');
 
-		const setValue = (color) => {
+		const setValue = (color, emit = true) => {
 			value = normalizeHexColor(color, value);
 			swatch.style.background = value;
 			customInput.value = value;
+			if (emit) {
+				root.dispatchEvent(new CustomEvent('port24-color-change', {
+					detail: {value}
+				}));
+			}
 		};
 
 		for (const color of palette) {
@@ -387,11 +545,12 @@
 			}
 		});
 
-		setValue(value);
+		setValue(value, false);
 
 		return {
 			element: root,
-			getValue: () => value
+			getValue: () => value,
+			setValue
 		};
 	}
 
@@ -1821,6 +1980,7 @@
 					for (const field of getColorFields()) {
 						ensureColorPickerForField(field);
 					}
+					ensureUtilizationControls();
 					ensureBulkControls();
 
 					uiBootstrapped = true;

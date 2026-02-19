@@ -13,6 +13,16 @@ $form->addField(new CWidgetFieldMultiSelectHostView($data['fields']['hostids']))
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['legend_text']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['traffic_in_item_pattern']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['traffic_out_item_pattern']));
+$form->addField(new CWidgetFieldSelectView($data['fields']['port_color_mode']));
+$form->addField(new CWidgetFieldSelectView($data['fields']['utilization_overlay_enabled']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['speed_item_pattern']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_low_threshold']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_warn_threshold']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_high_threshold']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_low_color']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_warn_color']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_high_color']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_na_color']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['legend_size']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['preset']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_brand']));
@@ -88,6 +98,16 @@ for ($i = 1; $i <= $port_count; $i++) {
 
 $widget_edit_js = file_get_contents(__DIR__.'/../assets/js/widget.edit.js');
 if ($widget_edit_js !== false) {
+	$manifest_version = 'dev';
+	$manifest_raw = file_get_contents(__DIR__.'/../manifest.json');
+	if ($manifest_raw !== false) {
+		$manifest = json_decode($manifest_raw, true);
+		if (is_array($manifest) && isset($manifest['version']) && is_scalar($manifest['version'])) {
+			$manifest_version = (string) $manifest['version'];
+		}
+	}
+
+	$form->addJavaScript('window.SWITCH_WIDGET_BUILD = '.json_encode($manifest_version).';');
 	$form->addJavaScript($widget_edit_js);
 }
 $form->addJavaScript('window.switch_widget_form.init();');

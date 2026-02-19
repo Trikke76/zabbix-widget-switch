@@ -22,32 +22,46 @@ $css = implode('', [
 	'.port24-card{position:relative;display:block;text-decoration:none;color:#d8e1ea;background:#11161b;border:1px solid #2b3642;',
 	'border-radius:4px;padding:calc(4px * var(--port24-scale)) calc(4px * var(--port24-scale)) calc(12px * var(--port24-scale)) calc(4px * var(--port24-scale));min-height:calc(44px * var(--port24-scale));box-shadow:inset 0 -1px 0 rgba(255,255,255,.04);}',
 	'.port24-card:hover{border-color:#7b8794;}',
+	'.port24-card.port24-heatmap{box-shadow:inset 0 -3px 0 var(--util-c,#64748B), inset 0 -1px 0 rgba(255,255,255,.04);}',
 	'.port24-jack{height:calc(22px * var(--port24-scale));position:relative;border:1px solid #1f2730;border-radius:2px 2px 4px 4px;',
 	'background:linear-gradient(180deg,#eef3f8 0 20%,#0d1318 20% 100%);overflow:hidden;}',
 	'.port24-jack:before{content:"";position:absolute;left:calc(6px * var(--port24-scale));right:calc(6px * var(--port24-scale));top:0;height:calc(7px * var(--port24-scale));background:#06090d;',
 	'clip-path:polygon(12% 100%,88% 100%,100% 0,0 0);} ',
 	'.port24-jack:after{content:"";position:absolute;left:calc(5px * var(--port24-scale));right:calc(5px * var(--port24-scale));bottom:calc(2px * var(--port24-scale));height:calc(5px * var(--port24-scale));',
 	'background:repeating-linear-gradient(90deg,#c4ccd5 0 2px,transparent 2px 4px);opacity:.85;}',
-	'.port24-jack-sfp{height:calc(22px * var(--port24-scale));position:relative;border:1px solid #38434f;border-radius:2px;',
-	'background:linear-gradient(180deg,#131a22 0%,#0b1016 100%);overflow:hidden;}',
-	'.port24-jack-sfp:before{content:"";position:absolute;left:calc(4px * var(--port24-scale));right:calc(4px * var(--port24-scale));top:calc(4px * var(--port24-scale));',
-	'height:calc(10px * var(--port24-scale));border:1px solid #5d6a78;border-radius:2px;background:#090d12;}',
-	'.port24-jack-sfp:after{content:"";position:absolute;left:calc(7px * var(--port24-scale));right:calc(7px * var(--port24-scale));bottom:calc(2px * var(--port24-scale));',
-	'height:calc(3px * var(--port24-scale));background:#8a96a5;border-radius:1px;opacity:.85;}',
+		'.port24-jack-sfp{height:calc(22px * var(--port24-scale));position:relative;border:1px solid #98a6b6;border-radius:2px;',
+		'background:linear-gradient(180deg,#dce4ec 0%,#b8c5d3 24%,#6f7f90 25%,#586678 100%);overflow:hidden;',
+		'box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(0,0,0,.35),0 0 0 1px rgba(20,30,42,.28);}',
+		'.port24-jack-sfp:before{content:"";position:absolute;left:calc(3px * var(--port24-scale));right:calc(3px * var(--port24-scale));top:calc(3px * var(--port24-scale));',
+		'height:calc(12px * var(--port24-scale));border:1px solid #1f2a36;border-radius:1px;background:linear-gradient(180deg,#111820 0%,#060b11 100%);',
+		'box-shadow:inset 0 1px 0 rgba(255,255,255,.06),inset 0 -2px 0 rgba(0,0,0,.55);}',
+		'.port24-jack-sfp:after{content:"";position:absolute;left:50%;transform:translateX(-50%);bottom:calc(2px * var(--port24-scale));',
+		'width:calc(12px * var(--port24-scale));height:calc(3px * var(--port24-scale));background:#252f3b;border-top:1px solid #9fb0c2;',
+		'clip-path:polygon(0 0,100% 0,88% 100%,12% 100%);box-shadow:0 -1px 0 rgba(0,0,0,.35);}',
 	'.port24-led{position:absolute;right:calc(4px * var(--port24-scale));top:calc(4px * var(--port24-scale));width:calc(8px * var(--port24-scale));height:calc(8px * var(--port24-scale));border-radius:50%;background:var(--port-color,#2F855A);',
 	'box-shadow:0 0 0 1px rgba(255,255,255,.2),0 0 calc(12px * var(--port24-scale)) var(--port-color,#2F855A),0 0 calc(20px * var(--port24-scale)) var(--port-color,#2F855A);}',
 	'.port24-label{position:absolute;left:calc(4px * var(--port24-scale));right:calc(4px * var(--port24-scale));bottom:calc(2px * var(--port24-scale));text-align:center;font-size:calc(9px * var(--port24-scale));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#c9d3de;}',
+	'.port24-util-track{position:absolute;left:calc(4px * var(--port24-scale));right:calc(4px * var(--port24-scale));bottom:0;height:calc(2px * var(--port24-scale));border-radius:2px;background:rgba(148,163,184,.22);overflow:hidden;}',
+	'.port24-util-fill{display:block;height:100%;width:100%;background:var(--util-c,#22C55E);}',
 	'.port24-tooltip{position:fixed;z-index:100000;pointer-events:none;min-width:190px;background:#0f1722;color:#d9e3ee;border:1px solid #2e3c4d;border-radius:8px;padding:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);font-size:11px;line-height:1.3;display:none;}',
 	'.port24-tooltip-title{font-weight:700;margin-bottom:6px;color:#f8fbff;}',
 	'.port24-tip-meta{margin:2px 0;opacity:.95;}',
 	'.port24-tip-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0;}',
 	'.port24-tip-label{opacity:.9;min-width:24px;}',
 	'.port24-tip-value{opacity:.95;font-variant-numeric:tabular-nums;}',
-	'.port24-tip-svg{display:block;width:120px;height:26px;background:#0a1119;border:1px solid #223041;border-radius:4px;overflow:hidden;}',
-	'.port24-tip-path-in{fill:none;stroke:#38bdf8;stroke-width:1.6;}',
-	'.port24-tip-path-out{fill:none;stroke:#f59e0b;stroke-width:1.6;}',
+		'.port24-tip-svg{display:block;width:120px;height:26px;background:#0a1119;border:1px solid #223041;border-radius:4px;overflow:hidden;}',
+		'.port24-tip-area-in{fill:rgba(56,189,248,0.35);}',
+		'.port24-tip-area-out{fill:rgba(245,158,11,0.30);}',
+		'.port24-tip-path-in{fill:none;stroke:#4fb9ff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}',
+		'.port24-tip-path-out{fill:none;stroke:#ffb020;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}',
+		'.port24-tip-dot{fill:#334155;stroke:#dbeafe;stroke-width:1.1;}',
 	'.port24-card-wrap:hover .port24-hover-tip{display:block;}',
 	'.port24-hover-tip{position:absolute;z-index:40;left:calc(14px * var(--port24-scale));top:calc(42px * var(--port24-scale));min-width:200px;max-width:300px;background:#0f1722;color:#d9e3ee;border:1px solid #2e3c4d;border-radius:8px;padding:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);font-size:11px;line-height:1.3;display:none;pointer-events:none;}',
+	'.port24-util-grid-wrap{margin-top:10px;}',
+	'.port24-util-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:4px;}',
+	'.port24-util-cell{border:1px solid rgba(15,23,34,.28);border-radius:3px;padding:4px 3px;text-align:center;font-size:10px;line-height:1.2;color:#0f1722;}',
+	'.port24-util-cell-port{display:block;font-weight:700;opacity:.8;margin-bottom:2px;}',
+	'.port24-util-cell-val{display:block;font-weight:700;}',
 	'.port24-denied{display:inline-block;padding:10px 12px;border:1px solid #e7b7b7;border-radius:6px;background:#fff5f5;color:#9b2c2c;font-size:13px;}'
 ]);
 
@@ -75,6 +89,16 @@ if (!empty($data['access_denied'])) {
 
 $columns = max(1, (int) ($data['ports_per_row'] ?? 12));
 $row_count = max(1, (int) ($data['row_count'] ?? 1));
+$port_color_mode = (int) ($data['port_color_mode'] ?? 0);
+$utilization_overlay_enabled = (int) ($data['utilization_overlay_enabled'] ?? 1);
+$show_utilization_overlay = ($utilization_overlay_enabled === 1);
+$util_low_color = (string) ($data['utilization_low_color'] ?? '#22C55E');
+$util_warn_color = (string) ($data['utilization_warn_color'] ?? '#FCD34D');
+$util_high_color = (string) ($data['utilization_high_color'] ?? '#DB2777');
+$util_na_color = (string) ($data['utilization_na_color'] ?? '#94A3B8');
+$util_low_threshold = (float) ($data['utilization_low_threshold'] ?? 5);
+$util_warn_threshold = (float) ($data['utilization_warn_threshold'] ?? 40);
+$util_high_threshold = (float) ($data['utilization_high_threshold'] ?? 70);
 $switch = (new CDiv())->addClass('port24-switch')->setAttribute('style', '--port24-scale: '.$scale.';');
 $head = (new CDiv())->addClass('port24-head');
 $head
@@ -92,7 +116,34 @@ foreach ($data['ports'] as $port) {
 	}
 }
 
-$make_card = static function(array $port): CTag {
+$util_color_for = static function(?float $util) use ($util_low_threshold, $util_warn_threshold, $util_high_threshold, $util_low_color, $util_warn_color, $util_high_color, $util_na_color): string {
+	if ($util === null) {
+		return $util_na_color;
+	}
+	if ($util >= $util_high_threshold) {
+		return $util_high_color;
+	}
+	if ($util >= $util_warn_threshold) {
+		return $util_warn_color;
+	}
+	if ($util >= $util_low_threshold) {
+		return $util_low_color;
+	}
+	return '#22C55E';
+};
+
+$make_card = static function(array $port) use ($show_utilization_overlay, $util_color_for): CTag {
+	$active_color = (string) ($port['active_color'] ?? '');
+	if (preg_match('/^#[0-9A-Fa-f]{6}$/', $active_color) !== 1) {
+		$active_color = '#22C55E';
+	}
+	$utilization = isset($port['utilization_percent']) && $port['utilization_percent'] !== null
+		? (float) $port['utilization_percent']
+		: null;
+	$util_color = isset($port['utilization_color']) && is_string($port['utilization_color'])
+		? (string) $port['utilization_color']
+		: $util_color_for($utilization);
+
 	if (empty($port['has_trigger'])) {
 		$state = _('No trigger');
 	}
@@ -105,6 +156,9 @@ $make_card = static function(array $port): CTag {
 	$port_type = !empty($port['is_sfp']) ? 'SFP' : 'RJ45';
 	$tooltip = $port['name']."\n".sprintf(_('State: %s'), $state);
 	$tooltip .= "\n".sprintf(_('Type: %s'), $port_type);
+	if (isset($port['utilization_percent']) && $port['utilization_percent'] !== null) {
+		$tooltip .= "\n".sprintf(_('Utilization: %s%%'), number_format((float) $port['utilization_percent'], 1));
+	}
 	if ($port['triggerid'] !== '') {
 		$trigger_name = $port['trigger_name'] !== '' ? $port['trigger_name'] : '#'.$port['triggerid'];
 		$tooltip .= "\n".sprintf(_('Trigger: %s'), $trigger_name);
@@ -114,35 +168,46 @@ $make_card = static function(array $port): CTag {
 		$trigger_name = _('not configured');
 	}
 
-	$spark_path = static function(array $values, int $width = 120, int $height = 26, int $padding = 3): string {
-		$count = count($values);
-		if ($count < 1) {
-			return '';
-		}
-		if ($count === 1) {
-			$y = round($height / 2, 2);
-			return 'M'.$padding.','.$y.' L'.($width - $padding).','.$y;
-		}
+		$spark_geom = static function(array $values, int $width = 120, int $height = 26, int $padding = 3): array {
+			$count = count($values);
+			if ($count < 1) {
+				return ['line' => '', 'area' => '', 'last_x' => 0.0, 'last_y' => 0.0];
+			}
+			if ($count === 1) {
+				$y = round($height / 2, 2);
+				$line = 'M'.$padding.','.$y.' L'.($width - $padding).','.$y;
+				$area = 'M'.$padding.','.($height - $padding).' L'.$padding.','.$y.' L'.($width - $padding).','.$y.' L'.($width - $padding).','.($height - $padding).' Z';
+				return ['line' => $line, 'area' => $area, 'last_x' => (float) ($width - $padding), 'last_y' => (float) $y];
+			}
 
-		$min = min($values);
-		$max = max($values);
-		$is_flat = abs($max - $min) < 0.0000001;
-		$span = $is_flat ? 1.0 : ($max - $min);
-		$dw = $width - ($padding * 2);
-		$dh = $height - ($padding * 2);
+			$min = min($values);
+			$max = max($values);
+			$is_flat = abs($max - $min) < 0.0000001;
+			$span = $is_flat ? 1.0 : ($max - $min);
+			$dw = $width - ($padding * 2);
+			$dh = $height - ($padding * 2);
 
-		$parts = [];
-		$last_index = $count - 1;
-		foreach ($values as $idx => $value) {
-			$x = $padding + ($dw * $idx / $last_index);
-			$y = $is_flat
-				? ($padding + ($dh / 2))
-				: ($padding + $dh - ((($value - $min) / $span) * $dh));
-			$parts[] = ($idx === 0 ? 'M' : 'L').round($x, 2).','.round($y, 2);
-		}
+			$parts = [];
+			$last_index = $count - 1;
+			$last_x = (float) $padding;
+			$last_y = (float) ($height - $padding);
+			foreach ($values as $idx => $value) {
+				$x = $padding + ($dw * $idx / $last_index);
+				$y = $is_flat
+					? ($padding + ($dh / 2))
+					: ($padding + $dh - ((($value - $min) / $span) * $dh));
+				$parts[] = ($idx === 0 ? 'M' : 'L').round($x, 2).','.round($y, 2);
+				$last_x = (float) round($x, 2);
+				$last_y = (float) round($y, 2);
+			}
 
-		return implode(' ', $parts);
-	};
+			$line = implode(' ', $parts);
+			$first_x = (float) $padding;
+			$base_y = (float) ($height - $padding);
+			$area = $line.' L'.$last_x.','.$base_y.' L'.$first_x.','.$base_y.' Z';
+
+			return ['line' => $line, 'area' => $area, 'last_x' => $last_x, 'last_y' => $last_y];
+		};
 	$fmt_last = static function(array $values): string {
 		if ($values === []) {
 			return 'n/a';
@@ -159,14 +224,14 @@ $make_card = static function(array $port): CTag {
 
 	$in_series = is_array($port['traffic_in_series'] ?? null) ? $port['traffic_in_series'] : [];
 	$out_series = is_array($port['traffic_out_series'] ?? null) ? $port['traffic_out_series'] : [];
-	$in_path = $spark_path($in_series);
-	$out_path = $spark_path($out_series);
+		$in_geom = $spark_geom($in_series);
+		$out_geom = $spark_geom($out_series);
 
 		$content = new CDiv();
-		$make_spark_svg = static function(string $path, string $line_class): CTag {
-			$svg = (new CTag('svg', true))
-				->addClass('port24-tip-svg')
-				->setAttribute('viewBox', '0 0 120 26');
+			$make_spark_svg = static function(array $geom, string $line_class, string $area_class): CTag {
+				$svg = (new CTag('svg', true))
+					->addClass('port24-tip-svg')
+					->setAttribute('viewBox', '0 0 120 26');
 
 			$baseline = (new CTag('line', true))
 				->setAttribute('x1', '3')
@@ -177,21 +242,59 @@ $make_card = static function(array $port): CTag {
 				->setAttribute('stroke-width', '1');
 			$svg->addItem($baseline);
 
-			if ($path !== '') {
-				$svg->addItem(
-					(new CTag('path', true))
-						->addClass($line_class)
-						->setAttribute('d', $path)
-				);
-			}
+				if (($geom['area'] ?? '') !== '') {
+					$svg->addItem(
+						(new CTag('path', true))
+							->addClass($area_class)
+							->setAttribute('d', (string) $geom['area'])
+					);
+				}
+
+				if (($geom['line'] ?? '') !== '') {
+					$svg->addItem(
+						(new CTag('path', true))
+							->addClass($line_class)
+							->setAttribute('d', (string) $geom['line'])
+					);
+
+					$svg->addItem(
+						(new CTag('circle', true))
+							->addClass('port24-tip-dot')
+							->setAttribute('cx', (string) ($geom['last_x'] ?? 0))
+							->setAttribute('cy', (string) ($geom['last_y'] ?? 0))
+							->setAttribute('r', '2.8')
+					);
+				}
 
 			return $svg;
 		};
 
 			$content
 				->addItem((new CDiv())->addClass(!empty($port['is_sfp']) ? 'port24-jack-sfp' : 'port24-jack'))
-				->addItem((new CDiv())->addClass('port24-led'))
+				->addItem(
+					(new CDiv())
+						->addClass('port24-led')
+						->setAttribute(
+							'style',
+							'background: '.$active_color.';'
+							.'box-shadow:0 0 0 1px rgba(255,255,255,.2),'
+							.'0 0 calc(12px * var(--port24-scale)) '.$active_color.','
+							.'0 0 calc(20px * var(--port24-scale)) '.$active_color.';'
+						)
+				)
 				->addItem((new CDiv($port['name']))->addClass('port24-label'));
+	if ($show_utilization_overlay) {
+		$content->addItem(
+			(new CDiv(
+				(new CSpan())->addClass('port24-util-fill')
+			))
+				->addClass('port24-util-track')
+				->setAttribute(
+					'style',
+					'--util-c: '.$util_color.';'
+				)
+		);
+	}
 
 		$hover_tip = (new CDiv(
 			(new CDiv($port['name']))->addClass('port24-tooltip-title')
@@ -199,19 +302,27 @@ $make_card = static function(array $port): CTag {
 			->addClass('port24-hover-tip')
 			->addItem((new CDiv(sprintf(_('State: %s'), $state)))->addClass('port24-tip-meta'))
 			->addItem((new CDiv(sprintf(_('Type: %s'), $port_type)))->addClass('port24-tip-meta'))
+			->addItem(
+				(new CDiv(sprintf(
+					_('Utilization: %s'),
+					(isset($port['utilization_percent']) && $port['utilization_percent'] !== null)
+						? number_format((float) $port['utilization_percent'], 1).'%'
+						: 'n/a'
+				)))->addClass('port24-tip-meta')
+			)
 			->addItem((new CDiv(sprintf(_('Trigger: %s'), $trigger_name)))->addClass('port24-tip-meta'))
 			->addItem(
 				(new CDiv())
 					->addClass('port24-tip-row')
 					->addItem((new CSpan('IN'))->addClass('port24-tip-label'))
-					->addItem($make_spark_svg($in_path, 'port24-tip-path-in'))
+					->addItem($make_spark_svg($in_geom, 'port24-tip-path-in', 'port24-tip-area-in'))
 					->addItem((new CSpan($fmt_last($in_series)))->addClass('port24-tip-value'))
 			)
 			->addItem(
 				(new CDiv())
 					->addClass('port24-tip-row')
 					->addItem((new CSpan('OUT'))->addClass('port24-tip-label'))
-					->addItem($make_spark_svg($out_path, 'port24-tip-path-out'))
+					->addItem($make_spark_svg($out_geom, 'port24-tip-path-out', 'port24-tip-area-out'))
 					->addItem((new CSpan($fmt_last($out_series)))->addClass('port24-tip-value'))
 			);
 
@@ -224,8 +335,13 @@ $make_card = static function(array $port): CTag {
 
 	$card
 		->addClass('port24-card')
-		->setAttribute('style', '--port-color: '.$port['active_color'].';')
+		->setAttribute('style', '--port-color: '.$active_color.';')
 		->setAttribute('data-port-name', (string) $port['name']);
+	if ($show_utilization_overlay) {
+		$card
+			->addClass('port24-heatmap')
+			->setAttribute('style', '--port-color: '.$active_color.'; --util-c: '.$util_color.';');
+	}
 
 	if (!empty($port['hostid'])) {
 		$card->setAttribute('data-hostid', (string) $port['hostid']);
@@ -274,6 +390,32 @@ if ($sfp_ports !== []) {
 
 	$switch->addItem($face);
 	$container->addItem($switch);
+
+if ($show_utilization_overlay) {
+	$util_grid = (new CDiv())->addClass('port24-util-grid');
+	foreach ($data['ports'] as $idx => $port) {
+		$util = isset($port['utilization_percent']) && $port['utilization_percent'] !== null
+			? (float) $port['utilization_percent']
+			: null;
+		$util_text = $util !== null ? number_format($util, 1).'%' : 'n/a';
+		$cell_color = isset($port['utilization_color']) && is_string($port['utilization_color'])
+			? (string) $port['utilization_color']
+			: $util_color_for($util);
+		$port_label = 'P'.($idx + 1);
+
+		$util_grid->addItem(
+			(new CDiv())
+				->addClass('port24-util-cell')
+				->setAttribute('style', 'background: '.$cell_color.';')
+				->addItem((new CSpan($port_label))->addClass('port24-util-cell-port'))
+				->addItem((new CSpan($util_text))->addClass('port24-util-cell-val'))
+		);
+	}
+
+	$container->addItem(
+		(new CDiv($util_grid))->addClass('port24-util-grid-wrap')
+	);
+}
 
 (new CWidgetView($data))
 	->addItem(new CTag('style', true, $css))

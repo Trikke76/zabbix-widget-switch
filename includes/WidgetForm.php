@@ -12,6 +12,7 @@ class WidgetForm extends CWidgetForm {
 	private const DEFAULT_PORTS_PER_ROW = 12;
 	private const DEFAULT_TRAFFIC_IN_PATTERN = 'ifInOctets[*]';
 	private const DEFAULT_TRAFFIC_OUT_PATTERN = 'ifOutOctets[*]';
+	private const DEFAULT_SPEED_PATTERN = 'ifHighSpeed[*]';
 	private const MAX_ROW_COUNT = 24;
 	private const MAX_PORTS_PER_ROW = 48;
 	private const MAX_SFP_PORTS = 32;
@@ -28,7 +29,7 @@ class WidgetForm extends CWidgetForm {
 
 		$this->addField(
 			(new CWidgetFieldTextBox('legend_text', _('Legend text')))
-				->setDefault('')
+				->setDefault('Heatmap: green < 5%, low >= 5%, warn >= 40%, high >= 70%')
 		);
 		$this->addField(
 			(new CWidgetFieldTextBox('traffic_in_item_pattern', _('Traffic in item pattern')))
@@ -37,6 +38,50 @@ class WidgetForm extends CWidgetForm {
 		$this->addField(
 			(new CWidgetFieldTextBox('traffic_out_item_pattern', _('Traffic out item pattern')))
 				->setDefault(self::DEFAULT_TRAFFIC_OUT_PATTERN)
+		);
+		$this->addField(
+			(new CWidgetFieldSelect('port_color_mode', _('Port color mode'), [
+				0 => _('Trigger state'),
+				1 => _('Utilization heatmap')
+			]))->setDefault(0)
+		);
+		$this->addField(
+			(new CWidgetFieldSelect('utilization_overlay_enabled', _('Show utilization overlay'), [
+				0 => _('No'),
+				1 => _('Yes')
+			]))->setDefault(1)
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('speed_item_pattern', _('Speed item pattern')))
+				->setDefault(self::DEFAULT_SPEED_PATTERN)
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('utilization_low_threshold', _('Utilization low threshold (%)')))
+				->setDefault('5')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('utilization_warn_threshold', _('Utilization warn threshold (%)')))
+				->setDefault('40')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('utilization_high_threshold', _('Utilization high threshold (%)')))
+				->setDefault('70')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('utilization_low_color', _('Utilization low color')))
+				->setDefault('#22C55E')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('utilization_warn_color', _('Utilization warn color')))
+				->setDefault('#FCD34D')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('utilization_high_color', _('Utilization high color')))
+				->setDefault('#DB2777')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('utilization_na_color', _('Utilization n/a color')))
+				->setDefault('#94a3b8')
 		);
 		$this->addField(
 			(new CWidgetFieldSelect('legend_size', _('Legend size'), [
