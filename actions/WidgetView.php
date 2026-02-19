@@ -179,7 +179,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				$port['utilization_color'] = $util_low_color;
 			}
 			else {
-				$port['utilization_color'] = '#22C55E';
+				$port['utilization_color'] = '#BBF7D0';
 			}
 			if (!$port['has_trigger']) {
 				$port['active_color'] = $port['default_color'];

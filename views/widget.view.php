@@ -129,7 +129,7 @@ $util_color_for = static function(?float $util) use ($util_low_threshold, $util_
 	if ($util >= $util_low_threshold) {
 		return $util_low_color;
 	}
-	return '#22C55E';
+	return '#BBF7D0';
 };
 
 $make_card = static function(array $port) use ($show_utilization_overlay, $util_color_for): CTag {
