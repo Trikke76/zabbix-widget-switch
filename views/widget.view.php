@@ -56,6 +56,13 @@ $css = implode('', [
 	'.port24-tip-state-seg{display:block;border-radius:1px;background:#64748B;}',
 	'.port24-tip-state-seg.ok{background:#22C55E;}',
 	'.port24-tip-state-seg.problem{background:#EF4444;}',
+	'.port24-tip-counter-row{margin:6px 0 4px 0;}',
+	'.port24-tip-counter-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}',
+	'.port24-tip-counter-grid{display:grid;grid-template-columns:repeat(48,1fr);gap:1px;height:8px;background:#1b2430;padding:1px;border-radius:2px;}',
+	'.port24-tip-counter-seg{display:block;border-radius:1px;background:#334155;}',
+	'.port24-tip-counter-seg.low{background:#38BDF8;}',
+	'.port24-tip-counter-seg.warn{background:#F59E0B;}',
+	'.port24-tip-counter-seg.high{background:#EF4444;}',
 		'.port24-tip-svg{display:block;width:120px;height:26px;background:#0a1119;border:1px solid #223041;border-radius:4px;overflow:hidden;}',
 		'.port24-tip-area-in{fill:rgba(56,189,248,0.35);}',
 		'.port24-tip-area-out{fill:rgba(245,158,11,0.30);}',
@@ -99,6 +106,7 @@ $row_count = max(1, (int) ($data['row_count'] ?? 1));
 $port_color_mode = (int) ($data['port_color_mode'] ?? 0);
 $utilization_overlay_enabled = (int) ($data['utilization_overlay_enabled'] ?? 1);
 $show_utilization_overlay = ($utilization_overlay_enabled === 1);
+$traffic_unit_mode = (int) ($data['traffic_unit_mode'] ?? 0);
 $util_low_color = (string) ($data['utilization_low_color'] ?? '#22C55E');
 $util_warn_color = (string) ($data['utilization_warn_color'] ?? '#FCD34D');
 $util_high_color = (string) ($data['utilization_high_color'] ?? '#DB2777');
@@ -139,7 +147,7 @@ $util_color_for = static function(?float $util) use ($util_low_threshold, $util_
 	return '#BBF7D0';
 };
 
-$make_card = static function(array $port) use ($show_utilization_overlay, $util_color_for): CTag {
+$make_card = static function(array $port) use ($show_utilization_overlay, $util_color_for, $traffic_unit_mode): CTag {
 	$active_color = (string) ($port['active_color'] ?? '');
 	if (preg_match('/^#[0-9A-Fa-f]{6}$/', $active_color) !== 1) {
 		$active_color = '#22C55E';
@@ -215,23 +223,92 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 
 			return ['line' => $line, 'area' => $area, 'last_x' => $last_x, 'last_y' => $last_y];
 		};
-	$fmt_last = static function(array $values): string {
+	$fmt_last = static function(array $values) use ($traffic_unit_mode): string {
 		if ($values === []) {
 			return 'n/a';
 		}
 		$last = (float) $values[count($values) - 1];
-		if ($last >= 1000000) {
-			return number_format($last / 1000000, 2).'M';
+		$divisor = 1000.0;
+		$suffixes = ['', 'k', 'M', 'G', 'T'];
+		$unit_suffix = $traffic_unit_mode === 1 ? 'bps' : 'B/s';
+		$value = max(0.0, $last);
+		$idx = 0;
+		while ($value >= $divisor && $idx < count($suffixes) - 1) {
+			$value /= $divisor;
+			$idx++;
 		}
-		if ($last >= 1000) {
-			return number_format($last / 1000, 1).'k';
+		if ($idx === 0) {
+			return (string) round($value).$unit_suffix;
 		}
-		return (string) round($last);
+		$decimals = $value >= 100 ? 0 : ($value >= 10 ? 1 : 2);
+		return number_format($value, $decimals).$suffixes[$idx].$unit_suffix;
+	};
+	$fmt_counter = static function(float $value): string {
+		$normalized = max(0.0, $value);
+		if ($normalized >= 1000000) {
+			return number_format($normalized / 1000000, 2).'M';
+		}
+		if ($normalized >= 1000) {
+			return number_format($normalized / 1000, 1).'k';
+		}
+		return (string) round($normalized);
+	};
+	$fmt_trend = static function(string $trend): string {
+		if ($trend === 'rising') {
+			return _('rising');
+		}
+		if ($trend === 'stable') {
+			return _('stable');
+		}
+		return _('n/a');
+	};
+	$classify_counter_buckets = static function(array $buckets): array {
+		if ($buckets === []) {
+			$buckets = array_fill(0, 48, 0.0);
+		}
+
+		$max_value = 0.0;
+		foreach ($buckets as $v) {
+			$max_value = max($max_value, (float) $v);
+		}
+
+		$classes = [];
+		foreach ($buckets as $v) {
+			$value = (float) $v;
+			if ($value <= 0.0 || $max_value <= 0.0) {
+				$classes[] = 'port24-tip-counter-seg';
+				continue;
+			}
+			$ratio = $value / $max_value;
+			if ($ratio >= 0.66) {
+				$classes[] = 'port24-tip-counter-seg high';
+			}
+			elseif ($ratio >= 0.33) {
+				$classes[] = 'port24-tip-counter-seg warn';
+			}
+			else {
+				$classes[] = 'port24-tip-counter-seg low';
+			}
+		}
+
+		return $classes;
 	};
 
 	$in_series = is_array($port['traffic_in_series'] ?? null) ? $port['traffic_in_series'] : [];
 	$out_series = is_array($port['traffic_out_series'] ?? null) ? $port['traffic_out_series'] : [];
 	$state_24h = is_array($port['state_24h'] ?? null) ? $port['state_24h'] : [];
+	$errors_24h_total = (float) ($port['errors_24h_total'] ?? 0.0);
+	$errors_24h_in = (float) ($port['errors_24h_in'] ?? 0.0);
+	$errors_24h_out = (float) ($port['errors_24h_out'] ?? 0.0);
+	$errors_24h_trend = (string) ($port['errors_24h_trend'] ?? 'n/a');
+	$discards_24h_total = (float) ($port['discards_24h_total'] ?? 0.0);
+	$discards_24h_in = (float) ($port['discards_24h_in'] ?? 0.0);
+	$discards_24h_out = (float) ($port['discards_24h_out'] ?? 0.0);
+	$discards_24h_trend = (string) ($port['discards_24h_trend'] ?? 'n/a');
+	$errors_24h_buckets = is_array($port['errors_24h_buckets'] ?? null) ? $port['errors_24h_buckets'] : [];
+	$discards_24h_buckets = is_array($port['discards_24h_buckets'] ?? null) ? $port['discards_24h_buckets'] : [];
+	$errors_bucket_classes = $classify_counter_buckets($errors_24h_buckets);
+	$discards_bucket_classes = $classify_counter_buckets($discards_24h_buckets);
 		$in_geom = $spark_geom($in_series);
 		$out_geom = $spark_geom($out_series);
 
@@ -319,6 +396,20 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 				)))->addClass('port24-tip-meta')
 			)
 			->addItem((new CDiv(sprintf(_('Trigger: %s'), $trigger_name)))->addClass('port24-tip-meta'))
+			->addItem((new CDiv(sprintf(
+				_('Errors 24h: %1$s (in %2$s / out %3$s), %4$s'),
+				$fmt_counter($errors_24h_total),
+				$fmt_counter($errors_24h_in),
+				$fmt_counter($errors_24h_out),
+				$fmt_trend($errors_24h_trend)
+			)))->addClass('port24-tip-meta'))
+			->addItem((new CDiv(sprintf(
+				_('Discards 24h: %1$s (in %2$s / out %3$s), %4$s'),
+				$fmt_counter($discards_24h_total),
+				$fmt_counter($discards_24h_in),
+				$fmt_counter($discards_24h_out),
+				$fmt_trend($discards_24h_trend)
+			)))->addClass('port24-tip-meta'))
 			->addItem(
 				(new CDiv())
 					->addClass('port24-tip-row')
@@ -339,12 +430,12 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 					->addItem(
 						(new CDiv())
 							->addClass('port24-tip-state-head')
-							->addItem((new CSpan('24h state'))->addClass('port24-tip-state-title'))
+								->addItem((new CSpan('24h online state'))->addClass('port24-tip-state-title'))
 							->addItem((new CSpan('now'))->addClass('port24-tip-state-title'))
 					)
-					->addItem(
-						(new CDiv(
-							(function(array $segments): CDiv {
+						->addItem(
+							(new CDiv(
+								(function(array $segments): CDiv {
 								$grid = (new CDiv())->addClass('port24-tip-state-grid');
 								if ($segments === []) {
 									$segments = array_fill(0, 48, -1);
@@ -364,9 +455,49 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 
 								return $grid;
 							})($state_24h)
-						))
+							))
+						)
+				)
+			->addItem(
+				(new CDiv())
+					->addClass('port24-tip-counter-row')
+					->addItem(
+						(new CDiv())
+							->addClass('port24-tip-counter-head')
+							->addItem((new CSpan('Errors 24h'))->addClass('port24-tip-state-title'))
+							->addItem((new CSpan($fmt_counter($errors_24h_total)))->addClass('port24-tip-state-title'))
 					)
-			);
+					->addItem((function(array $segments): CDiv {
+						$grid = (new CDiv())->addClass('port24-tip-counter-grid');
+						if ($segments === []) {
+							$segments = array_fill(0, 48, 'port24-tip-counter-seg');
+						}
+						foreach ($segments as $class) {
+							$grid->addItem((new CSpan())->addClass((string) $class));
+						}
+						return $grid;
+					})($errors_bucket_classes))
+			)
+			->addItem(
+				(new CDiv())
+					->addClass('port24-tip-counter-row')
+					->addItem(
+						(new CDiv())
+							->addClass('port24-tip-counter-head')
+							->addItem((new CSpan('Discards 24h'))->addClass('port24-tip-state-title'))
+							->addItem((new CSpan($fmt_counter($discards_24h_total)))->addClass('port24-tip-state-title'))
+					)
+					->addItem((function(array $segments): CDiv {
+						$grid = (new CDiv())->addClass('port24-tip-counter-grid');
+						if ($segments === []) {
+							$segments = array_fill(0, 48, 'port24-tip-counter-seg');
+						}
+						foreach ($segments as $class) {
+							$grid->addItem((new CSpan())->addClass((string) $class));
+						}
+						return $grid;
+					})($discards_bucket_classes))
+				);
 
 	if ($port['url'] !== '') {
 		$card = new CLink($content, $port['url']);

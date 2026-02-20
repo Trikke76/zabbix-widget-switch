@@ -13,6 +13,10 @@ class WidgetForm extends CWidgetForm {
 	private const DEFAULT_TRAFFIC_IN_PATTERN = 'ifInOctets[*]';
 	private const DEFAULT_TRAFFIC_OUT_PATTERN = 'ifOutOctets[*]';
 	private const DEFAULT_SPEED_PATTERN = 'ifHighSpeed[*]';
+	private const DEFAULT_IN_ERRORS_PATTERN = 'ifInErrors[*]';
+	private const DEFAULT_OUT_ERRORS_PATTERN = 'ifOutErrors[*]';
+	private const DEFAULT_IN_DISCARDS_PATTERN = 'ifInDiscards[*]';
+	private const DEFAULT_OUT_DISCARDS_PATTERN = 'ifOutDiscards[*]';
 	private const MAX_ROW_COUNT = 24;
 	private const MAX_PORTS_PER_ROW = 48;
 	private const MAX_SFP_PORTS = 32;
@@ -38,6 +42,28 @@ class WidgetForm extends CWidgetForm {
 		$this->addField(
 			(new CWidgetFieldTextBox('traffic_out_item_pattern', _('Traffic out item pattern')))
 				->setDefault(self::DEFAULT_TRAFFIC_OUT_PATTERN)
+		);
+		$this->addField(
+			(new CWidgetFieldSelect('traffic_unit_mode', _('Traffic data unit'), [
+				0 => _('B/s (bytes per second)'),
+				1 => _('b/s (bits per second)')
+			]))->setDefault(0)
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('in_errors_item_pattern', _('Errors in item pattern')))
+				->setDefault(self::DEFAULT_IN_ERRORS_PATTERN)
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('out_errors_item_pattern', _('Errors out item pattern')))
+				->setDefault(self::DEFAULT_OUT_ERRORS_PATTERN)
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('in_discards_item_pattern', _('Discards in item pattern')))
+				->setDefault(self::DEFAULT_IN_DISCARDS_PATTERN)
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('out_discards_item_pattern', _('Discards out item pattern')))
+				->setDefault(self::DEFAULT_OUT_DISCARDS_PATTERN)
 		);
 		$this->addField(
 			(new CWidgetFieldSelect('port_color_mode', _('Port color mode'), [

@@ -42,10 +42,13 @@ If you change host, reopen widget edit to refresh trigger lists.
   - state/type/trigger text
   - IN/OUT sparkline + latest value (when user has item read permission)
 
-## Release Notes 1.0.9
+## Release Notes 1.0.10
 
-- Added per-port `24h state` mini timeline bar in tooltip (OK/problem history).
-- Updated utilization heatmap behavior and defaults.
+- Added configurable 24h tooltip bars for `Errors` and `Discards` (in/out totals + trend).
+- Added compact, grouped edit UI sections (`Traffic Patterns`, `Error and Discard Patterns`, `Utilization Settings`, `Device Layout`).
+- Added/updated utilization controls with overlay toggle, thresholds and custom colors.
+- Improved edit-form sizing consistency (pattern fields, numeric fields, brand/model).
+- Updated picker styling in edit UI for cleaner, borderless color swatches.
 
 ## Profile Storage Permissions
 

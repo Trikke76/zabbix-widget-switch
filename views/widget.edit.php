@@ -13,6 +13,11 @@ $form->addField(new CWidgetFieldMultiSelectHostView($data['fields']['hostids']))
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['legend_text']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['traffic_in_item_pattern']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['traffic_out_item_pattern']));
+$form->addField(new CWidgetFieldSelectView($data['fields']['traffic_unit_mode']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['in_errors_item_pattern']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['out_errors_item_pattern']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['in_discards_item_pattern']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['out_discards_item_pattern']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['port_color_mode']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['utilization_overlay_enabled']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['speed_item_pattern']));

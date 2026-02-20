@@ -149,7 +149,72 @@
 		return '#D1D5DB';
 	}
 
-	function ensureUtilizationControls() {
+		function ensureUtilizationControls() {
+			const setCompactChars = (field, chars, useContentBox = false) => {
+				const wrap = field.closest('.form-field');
+				if (wrap) {
+					wrap.style.setProperty('display', 'inline-block', 'important');
+					wrap.style.setProperty('width', 'auto', 'important');
+					wrap.style.setProperty('max-width', 'none', 'important');
+					wrap.style.setProperty('min-width', '0', 'important');
+					wrap.style.setProperty('flex', '0 0 auto', 'important');
+					wrap.style.setProperty('flex-basis', 'auto', 'important');
+					wrap.style.setProperty('justify-self', 'start', 'important');
+				}
+				field.style.setProperty('width', `${chars}ch`, 'important');
+				field.style.setProperty('max-width', `${chars}ch`, 'important');
+				field.style.setProperty('min-width', `${chars}ch`, 'important');
+				field.style.setProperty('box-sizing', useContentBox ? 'content-box' : 'border-box', 'important');
+			};
+			const enforceTextFieldsByLabels = (labelTexts, chars, maxLength = null, options = {}) => {
+				const {
+					numericOnly = false,
+					allowDecimal = false,
+					contentBox = false
+				} = options;
+				const normalized = new Set(labelTexts.map((t) => t.trim().toLowerCase()));
+				for (const label of document.querySelectorAll('label[for]')) {
+					const key = String(label.textContent || '').trim().toLowerCase();
+					if (!normalized.has(key)) {
+						continue;
+					}
+					const field = document.getElementById(label.getAttribute('for'));
+					if (!field) {
+						continue;
+					}
+					setCompactChars(field, chars, contentBox);
+					if (maxLength !== null) {
+						field.maxLength = maxLength;
+						field.setAttribute('maxlength', String(maxLength));
+					}
+					if (contentBox) {
+						field.style.setProperty('padding-left', '0', 'important');
+						field.style.setProperty('padding-right', '0', 'important');
+						field.setAttribute('size', String(chars));
+					}
+					if (numericOnly && field.dataset.port24CompactFilterBound !== '1') {
+						field.style.textAlign = 'right';
+						field.addEventListener('input', () => {
+							let text = String(field.value || '').replace(',', '.');
+							text = allowDecimal ? text.replace(/[^0-9.]/g, '') : text.replace(/[^0-9]/g, '');
+							if (allowDecimal) {
+								const firstDot = text.indexOf('.');
+								if (firstDot !== -1) {
+									text = text.slice(0, firstDot + 1) + text.slice(firstDot + 1).replace(/\./g, '');
+								}
+							}
+							if (maxLength !== null && text.length > maxLength) {
+								text = text.slice(0, maxLength);
+							}
+							field.value = text;
+						});
+						field.dataset.port24CompactFilterBound = '1';
+					}
+				}
+			};
+			const enforcePatternFieldSizing = (labelTexts, chars, maxLength) => {
+				enforceTextFieldsByLabels(labelTexts, chars, maxLength, {contentBox: true});
+			};
 		const legendField = findField('legend_text');
 		const lowField = findField('utilization_low_threshold');
 		const warnField = findField('utilization_warn_threshold');
@@ -166,43 +231,84 @@
 			legendField.dispatchEvent(new Event('change', {bubbles: true}));
 		}
 
-		const speedField = findField('speed_item_pattern');
-		if (speedField && speedField.dataset.port24SpeedPatternInit !== '1') {
-			speedField.maxLength = 30;
-			speedField.style.width = '260px';
-			speedField.style.maxWidth = '260px';
-			speedField.dataset.port24SpeedPatternInit = '1';
-		}
-		const patternFieldNames = [
-			'name',
-			'traffic_in_item_pattern',
-			'traffic_out_item_pattern'
-		];
-		for (const name of patternFieldNames) {
-			const field = findField(name);
-			if (!field || field.dataset.port24TrafficPatternInit === '1') {
-				continue;
+			enforcePatternFieldSizing([
+				'Traffic in item pattern',
+				'Traffic out item pattern',
+				'Errors in item pattern',
+				'Errors out item pattern',
+				'Discards in item pattern',
+				'Discards out item pattern',
+				'Speed item pattern'
+			], 30, 30);
+			const shortTextFieldNames = [
+				'switch_brand',
+				'switch_model'
+			];
+			for (const name of shortTextFieldNames) {
+				const field = findField(name);
+				if (!field || field.dataset.port24ShortTextInit === '1') {
+					continue;
+				}
+				field.maxLength = 30;
+				field.setAttribute('maxlength', '30');
+				setCompactChars(field, 30);
+				field.dataset.port24ShortTextInit = '1';
 			}
-			field.style.width = '260px';
-			field.style.maxWidth = '260px';
-			field.dataset.port24TrafficPatternInit = '1';
-		}
+			enforceTextFieldsByLabels(['Brand', 'Model'], 30, 30);
+			for (const selector of [
+				'input[name="switch_brand"]',
+				'input[name="switch_model"]',
+				'input[name="fields[switch_brand]"]',
+				'input[name="fields[switch_model]"]'
+			]) {
+				for (const field of document.querySelectorAll(selector)) {
+					field.setAttribute('maxlength', '30');
+					setCompactChars(field, 30);
+				}
+			}
 
-		const thresholdFieldNames = [
-			'utilization_low_threshold',
+			const compactNumericFields = [
+				'switch_size',
+				'row_count',
+				'ports_per_row',
+				'sfp_ports'
+			];
+			for (const name of compactNumericFields) {
+				const field = findField(name);
+				if (!field || field.dataset.port24CompactNumInit === '1') {
+					continue;
+				}
+				field.maxLength = 4;
+				field.setAttribute('maxlength', '4');
+				setCompactChars(field, 6);
+				field.style.textAlign = 'right';
+				field.addEventListener('input', () => {
+					let text = String(field.value || '').replace(/[^0-9]/g, '');
+					if (text.length > 4) {
+						text = text.slice(0, 4);
+					}
+					field.value = text;
+				});
+				field.dataset.port24CompactNumInit = '1';
+			}
+			enforceTextFieldsByLabels(['Size (%)', 'Rows', 'Ports per row', 'SFP ports'], 6, 4, {numericOnly: true});
+			ensureCompactMainLayout();
+
+			const thresholdFieldNames = [
+				'utilization_low_threshold',
 			'utilization_warn_threshold',
 			'utilization_high_threshold'
 		];
 		for (const name of thresholdFieldNames) {
 			const field = findField(name);
-			if (!field || field.dataset.port24UtilThresholdInit === '1') {
-				continue;
-			}
+				if (!field || field.dataset.port24UtilThresholdInit === '1') {
+					continue;
+				}
 
-			field.maxLength = 4;
-			field.style.width = '72px';
-			field.style.maxWidth = '72px';
-			field.style.textAlign = 'right';
+				field.maxLength = 4;
+				field.setAttribute('maxlength', '4');
+				setCompactChars(field, 6);
+				field.style.textAlign = 'right';
 			field.placeholder = '0-100';
 			field.addEventListener('input', () => {
 				let text = String(field.value || '').replace(',', '.');
@@ -217,6 +323,60 @@
 				field.value = text;
 			});
 			field.dataset.port24UtilThresholdInit = '1';
+		}
+		enforceTextFieldsByLabels([
+			'Utilization low threshold (%)',
+			'Utilization warn threshold (%)',
+			'Utilization high threshold (%)'
+		], 6, 4, {numericOnly: true, allowDecimal: true});
+
+		function ensureCompactMainLayout() {
+			const compactNames = ['switch_size', 'row_count', 'ports_per_row', 'sfp_ports'];
+			const firstField = findField(compactNames[0]);
+			const formGrid = firstField ? firstField.closest('.form-grid') : null;
+			if (!formGrid || formGrid.querySelector('.port24-compact-main-grid')) {
+				return;
+			}
+
+			const firstLabel = formGrid.querySelector(`label[for="${firstField.id}"]`);
+			if (!firstLabel) {
+				return;
+			}
+
+			const compactGrid = document.createElement('div');
+			compactGrid.className = 'port24-compact-main-grid';
+			formGrid.insertBefore(compactGrid, firstLabel);
+
+			for (const name of compactNames) {
+				const field = findField(name);
+				if (!field) {
+					continue;
+				}
+				const label = formGrid.querySelector(`label[for="${field.id}"]`);
+				const fieldWrap = field.closest('.form-field');
+				if (!label || !fieldWrap) {
+					continue;
+				}
+
+				const pair = document.createElement('div');
+				pair.className = 'port24-compact-main-pair';
+				pair.appendChild(label);
+				pair.appendChild(fieldWrap);
+				compactGrid.appendChild(pair);
+			}
+
+			const alignToModel = () => {
+				const modelField = findField('switch_model');
+				if (!modelField) {
+					return;
+				}
+				const gridRect = formGrid.getBoundingClientRect();
+				const modelRect = modelField.getBoundingClientRect();
+				const leftOffset = Math.max(0, Math.round(modelRect.left - gridRect.left));
+				compactGrid.style.marginLeft = `${leftOffset}px`;
+			};
+			alignToModel();
+			requestAnimationFrame(alignToModel);
 		}
 
 		const colorFieldNames = [
@@ -306,6 +466,10 @@
 		picker.style.padding = '0';
 		picker.style.border = '0';
 		picker.style.background = 'transparent';
+		picker.style.outline = 'none';
+		picker.style.boxShadow = 'none';
+		picker.style.appearance = 'none';
+		picker.style.webkitAppearance = 'none';
 
 		const parent = field.parentNode;
 		if (!parent) {
@@ -373,7 +537,8 @@
 			if (legacyDefaults.has(normalized)) {
 				setFieldColor(field, '#D1D5DB');
 			}
-		}
+
+			}
 
 		document.body.dataset.port24DefaultColorMigrated = '1';
 	}
@@ -387,8 +552,8 @@
 		style.id = 'port24-modern-picker-style';
 		style.textContent = [
 			'.port24-modern-picker{position:relative;display:inline-flex;align-items:center;}',
-			'.port24-modern-picker .port24-swatch-btn{width:44px;height:30px;border:1px solid rgba(148,163,184,.45);border-radius:6px;background:transparent;padding:3px;cursor:pointer;box-shadow:none;}',
-			'.port24-modern-picker .port24-swatch-btn span{display:block;width:100%;height:100%;border-radius:4px;}',
+			'.port24-modern-picker .port24-swatch-btn{width:auto;height:auto;border:0;background:transparent;padding:0;cursor:pointer;box-shadow:none;outline:none;}',
+			'.port24-modern-picker .port24-swatch-btn span{display:block;width:44px;height:22px;border-radius:6px;}',
 			'.port24-modern-picker .port24-pop{position:absolute;z-index:1200;top:36px;left:0;min-width:230px;background:#141a22;border:1px solid #2f3947;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.45);padding:10px;color:#d9e2ec;}',
 			'.port24-modern-picker .port24-pop.is-hidden{display:none;}',
 			'.port24-modern-picker .port24-tabs{display:flex;gap:6px;margin:0 0 10px 0;}',
@@ -399,9 +564,80 @@
 			'.port24-modern-picker .port24-custom input{width:100%;background:#0f151d;color:#e5edf5;border:1px solid #354255;border-radius:6px;padding:6px 8px;}',
 			'.port24-modern-picker .port24-custom-actions{margin-top:8px;display:flex;justify-content:flex-end;}',
 			'.port24-modern-picker .port24-custom-apply{border:1px solid #3b82f6;background:#0f172a;color:#e2ecff;border-radius:6px;padding:4px 10px;cursor:pointer;}',
-			'.port24-modern-picker .port24-custom.is-hidden,.port24-modern-picker .port24-colors.is-hidden{display:none;}'
+			'.port24-modern-picker .port24-custom.is-hidden,.port24-modern-picker .port24-colors.is-hidden{display:none;}',
+			'.port24-compact-main-grid{display:grid;grid-template-columns:repeat(2,max-content);gap:8px 20px;grid-column:1 / -1;align-items:start;justify-content:start;width:fit-content;max-width:100%;}',
+			'.port24-compact-main-pair{display:grid;grid-template-columns:1fr;row-gap:4px;align-items:start;}',
+			'.port24-compact-main-pair > label{text-align:left;margin:0;}',
+			'.port24-compact-main-pair > .form-field{margin:0 !important;width:auto !important;min-width:0 !important;max-width:none !important;}'
 		].join('');
 		document.head.appendChild(style);
+	}
+
+	function ensureEditSectionStyle() {
+		if (document.getElementById('switch-edit-section-style')) {
+			return;
+		}
+
+		const style = document.createElement('style');
+		style.id = 'switch-edit-section-style';
+		style.textContent = [
+			'.switch-edit-section{grid-column:1 / -1;display:flex;align-items:center;gap:10px;margin:8px 0 2px 0;}',
+			'.switch-edit-section-title{font-weight:700;font-size:13px;color:#2b3a49;white-space:nowrap;}',
+			'.switch-edit-section-line{height:1px;flex:1 1 auto;background:#d8e0e8;}'
+		].join('');
+		document.head.appendChild(style);
+	}
+
+	function ensureEditSections() {
+		const formGrid = document.querySelector('.dashboard-widget-switch .form-grid, .form-grid');
+		if (!formGrid) {
+			return;
+		}
+
+		ensureEditSectionStyle();
+
+		const findLabelByText = (labelText) => {
+			const target = String(labelText || '').trim().toLowerCase();
+			for (const label of formGrid.querySelectorAll('label[for]')) {
+				const text = String(label.textContent || '').trim().toLowerCase();
+				if (text === target) {
+					return label;
+				}
+			}
+			return null;
+		};
+
+		const insertSection = (key, title, beforeLabelText) => {
+			const markerId = `switch-edit-section-${key}`;
+			if (document.getElementById(markerId)) {
+				return;
+			}
+
+			const anchor = findLabelByText(beforeLabelText);
+			if (!anchor || !anchor.parentNode) {
+				return;
+			}
+
+			const section = document.createElement('div');
+			section.className = 'switch-edit-section';
+			section.id = markerId;
+
+			const titleNode = document.createElement('div');
+			titleNode.className = 'switch-edit-section-title';
+			titleNode.textContent = title;
+
+			const line = document.createElement('div');
+			line.className = 'switch-edit-section-line';
+
+			section.appendChild(titleNode);
+			section.appendChild(line);
+			anchor.parentNode.insertBefore(section, anchor);
+		};
+
+		insertSection('traffic', 'Traffic Patterns', 'Traffic in item pattern');
+		insertSection('errors', 'Error and Discard Patterns', 'Errors in item pattern');
+		insertSection('util', 'Utilization Settings', 'Port color mode');
+		insertSection('layout', 'Device Layout', 'Brand');
 	}
 
 	function createModernBulkPicker(initialColor) {
@@ -1953,6 +2189,22 @@
 
 	window.switch_widget_form = {
 		init() {
+			const stopExisting = () => {
+				if (window.switch_widget_form._refreshTimer) {
+					clearInterval(window.switch_widget_form._refreshTimer);
+					window.switch_widget_form._refreshTimer = null;
+				}
+				if (window.switch_widget_form._refreshObserver) {
+					window.switch_widget_form._refreshObserver.disconnect();
+					window.switch_widget_form._refreshObserver = null;
+				}
+				if (window.switch_widget_form._onVisibilityChange) {
+					document.removeEventListener('visibilitychange', window.switch_widget_form._onVisibilityChange);
+					window.switch_widget_form._onVisibilityChange = null;
+				}
+			};
+			stopExisting();
+
 			let previousHostId = null;
 			let inFlight = false;
 			let uiBootstrapped = false;
@@ -1986,6 +2238,8 @@
 					uiBootstrapped = true;
 					lastLayoutKey = layoutKey;
 				}
+				ensureEditSections();
+				ensureUtilizationControls();
 
 				const hostid = getHostId();
 				if (hostid === previousHostId || inFlight) {
@@ -2008,7 +2262,31 @@
 			};
 
 			refresh();
-			setInterval(refresh, 1200);
+			const timerId = setInterval(refresh, 1200);
+			window.switch_widget_form._refreshTimer = timerId;
+
+			const onVisibilityChange = () => {
+				if (document.visibilityState === 'hidden' && window.switch_widget_form._refreshTimer) {
+					clearInterval(window.switch_widget_form._refreshTimer);
+					window.switch_widget_form._refreshTimer = null;
+				}
+				else if (document.visibilityState === 'visible' && !window.switch_widget_form._refreshTimer) {
+					window.switch_widget_form._refreshTimer = setInterval(refresh, 1200);
+				}
+			};
+			document.addEventListener('visibilitychange', onVisibilityChange);
+			window.switch_widget_form._onVisibilityChange = onVisibilityChange;
+
+			const formRoot = document.getElementById('widget-dialogue-form');
+			if (formRoot && formRoot.parentNode) {
+				const observer = new MutationObserver(() => {
+					if (!document.body.contains(formRoot)) {
+						stopExisting();
+					}
+				});
+				observer.observe(document.body, {childList: true, subtree: true});
+				window.switch_widget_form._refreshObserver = observer;
+			}
 		}
 	};
 })();

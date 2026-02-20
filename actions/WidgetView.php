@@ -12,9 +12,17 @@ class WidgetView extends CControllerDashboardWidgetView {
 	private const DEFAULT_TRAFFIC_IN_PATTERN = 'ifInOctets[*]';
 	private const DEFAULT_TRAFFIC_OUT_PATTERN = 'ifOutOctets[*]';
 	private const DEFAULT_SPEED_PATTERN = 'ifHighSpeed[*]';
+	private const DEFAULT_IN_ERRORS_PATTERN = 'ifInErrors[*]';
+	private const DEFAULT_OUT_ERRORS_PATTERN = 'ifOutErrors[*]';
+	private const DEFAULT_IN_DISCARDS_PATTERN = 'ifInDiscards[*]';
+	private const DEFAULT_OUT_DISCARDS_PATTERN = 'ifOutDiscards[*]';
+	private const TRAFFIC_UNIT_BYTES = 0;
+	private const TRAFFIC_UNIT_BITS = 1;
 	private const MAX_SPEED_PATTERN_LENGTH = 30;
 	private const TRAFFIC_POINTS = 24;
 	private const TRAFFIC_LOOKBACK_SECONDS = 1800;
+	private const COUNTER_LOOKBACK_SECONDS = 86400;
+	private const COUNTER_POINTS = 240;
 	private const STATE_BAR_WINDOW_SECONDS = 86400;
 	private const STATE_BAR_BUCKETS = 48;
 	private const MAX_ROW_COUNT = 24;
@@ -26,7 +34,14 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$hostid = $this->extractHostId();
 		$traffic_in_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['traffic_in_item_pattern'] ?? self::DEFAULT_TRAFFIC_IN_PATTERN), self::DEFAULT_TRAFFIC_IN_PATTERN);
 		$traffic_out_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['traffic_out_item_pattern'] ?? self::DEFAULT_TRAFFIC_OUT_PATTERN), self::DEFAULT_TRAFFIC_OUT_PATTERN);
+		$traffic_unit_mode = ((int) ($this->fields_values['traffic_unit_mode'] ?? self::TRAFFIC_UNIT_BYTES)) === self::TRAFFIC_UNIT_BITS
+			? self::TRAFFIC_UNIT_BITS
+			: self::TRAFFIC_UNIT_BYTES;
 		$speed_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['speed_item_pattern'] ?? self::DEFAULT_SPEED_PATTERN), self::DEFAULT_SPEED_PATTERN);
+		$in_errors_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['in_errors_item_pattern'] ?? self::DEFAULT_IN_ERRORS_PATTERN), self::DEFAULT_IN_ERRORS_PATTERN);
+		$out_errors_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['out_errors_item_pattern'] ?? self::DEFAULT_OUT_ERRORS_PATTERN), self::DEFAULT_OUT_ERRORS_PATTERN);
+		$in_discards_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['in_discards_item_pattern'] ?? self::DEFAULT_IN_DISCARDS_PATTERN), self::DEFAULT_IN_DISCARDS_PATTERN);
+		$out_discards_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['out_discards_item_pattern'] ?? self::DEFAULT_OUT_DISCARDS_PATTERN), self::DEFAULT_OUT_DISCARDS_PATTERN);
 		$speed_pattern = substr($speed_pattern, 0, self::MAX_SPEED_PATTERN_LENGTH);
 		$speed_pattern_alt = $this->getAlternateSpeedPattern($speed_pattern);
 		$port_color_mode_raw = $this->fields_values['port_color_mode'] ?? 0;
@@ -79,8 +94,13 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'access_denied' => true,
 				'legend_text' => $legend_text,
 				'traffic_in_item_pattern' => $traffic_in_pattern,
-				'traffic_out_item_pattern' => $traffic_out_pattern,
-				'speed_item_pattern' => $speed_pattern,
+					'traffic_out_item_pattern' => $traffic_out_pattern,
+					'traffic_unit_mode' => $traffic_unit_mode,
+					'in_errors_item_pattern' => $in_errors_pattern,
+					'out_errors_item_pattern' => $out_errors_pattern,
+					'in_discards_item_pattern' => $in_discards_pattern,
+					'out_discards_item_pattern' => $out_discards_pattern,
+					'speed_item_pattern' => $speed_pattern,
 				'port_color_mode' => $port_color_mode,
 				'utilization_overlay_enabled' => $utilization_overlay_enabled,
 				'utilization_low_threshold' => $util_low_threshold,
@@ -134,9 +154,22 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$port['traffic_out_item_key'] = $this->resolvePortItemKey($traffic_out_pattern, $index + 1);
 			$port['speed_item_key'] = $this->resolvePortItemKey($speed_pattern, $index + 1);
 			$port['speed_item_key_alt'] = $this->resolvePortItemKey($speed_pattern_alt, $index + 1);
+			$port['in_errors_item_key'] = $this->resolvePortItemKey($in_errors_pattern, $index + 1);
+			$port['out_errors_item_key'] = $this->resolvePortItemKey($out_errors_pattern, $index + 1);
+			$port['in_discards_item_key'] = $this->resolvePortItemKey($in_discards_pattern, $index + 1);
+			$port['out_discards_item_key'] = $this->resolvePortItemKey($out_discards_pattern, $index + 1);
 		}
 		unset($port);
 		$traffic_series = $this->loadTrafficSeries($hostid, $ports);
+		$counter_deltas = $this->loadCounterDeltas24h(
+			$hostid,
+			array_values(array_unique(array_filter(array_merge(
+				array_map(static fn(array $port): string => (string) ($port['in_errors_item_key'] ?? ''), $ports),
+				array_map(static fn(array $port): string => (string) ($port['out_errors_item_key'] ?? ''), $ports),
+				array_map(static fn(array $port): string => (string) ($port['in_discards_item_key'] ?? ''), $ports),
+				array_map(static fn(array $port): string => (string) ($port['out_discards_item_key'] ?? ''), $ports)
+			), static fn(string $key): bool => $key !== '')))
+		);
 		$speed_values = $this->loadLatestItemValues($hostid, array_values(array_unique(array_filter(array_map(
 			static fn(array $port): string => (string) ($port['speed_item_key'] ?? ''),
 			$ports
@@ -156,7 +189,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$out_last = $port['traffic_out_series'] !== []
 				? (float) $port['traffic_out_series'][count($port['traffic_out_series']) - 1]
 				: 0.0;
-			$traffic_bps = max($in_last, $out_last) * 8.0;
+			$traffic_bps = max($in_last, $out_last);
 			$speed_key_used = (string) ($port['speed_item_key'] ?? '');
 			$speed_raw = (float) ($speed_values[$speed_key_used] ?? 0.0);
 			if ($speed_raw <= 0.0) {
@@ -194,15 +227,64 @@ class WidgetView extends CControllerDashboardWidgetView {
 				$port['active_color'] = $port['trigger_ok_color'];
 			}
 			$port['state_24h'] = $state_bars[$port['triggerid']] ?? [];
+			$in_errors_delta = (float) ($counter_deltas[$port['in_errors_item_key']]['delta'] ?? 0.0);
+			$out_errors_delta = (float) ($counter_deltas[$port['out_errors_item_key']]['delta'] ?? 0.0);
+			$in_discards_delta = (float) ($counter_deltas[$port['in_discards_item_key']]['delta'] ?? 0.0);
+			$out_discards_delta = (float) ($counter_deltas[$port['out_discards_item_key']]['delta'] ?? 0.0);
+			$in_errors_buckets = $counter_deltas[$port['in_errors_item_key']]['buckets'] ?? array_fill(0, self::STATE_BAR_BUCKETS, 0.0);
+			$out_errors_buckets = $counter_deltas[$port['out_errors_item_key']]['buckets'] ?? array_fill(0, self::STATE_BAR_BUCKETS, 0.0);
+			$in_discards_buckets = $counter_deltas[$port['in_discards_item_key']]['buckets'] ?? array_fill(0, self::STATE_BAR_BUCKETS, 0.0);
+			$out_discards_buckets = $counter_deltas[$port['out_discards_item_key']]['buckets'] ?? array_fill(0, self::STATE_BAR_BUCKETS, 0.0);
+			$errors_24h_buckets = [];
+			$discards_24h_buckets = [];
+			for ($i = 0; $i < self::STATE_BAR_BUCKETS; $i++) {
+				$errors_24h_buckets[] = max(0.0, (float) ($in_errors_buckets[$i] ?? 0.0) + (float) ($out_errors_buckets[$i] ?? 0.0));
+				$discards_24h_buckets[] = max(0.0, (float) ($in_discards_buckets[$i] ?? 0.0) + (float) ($out_discards_buckets[$i] ?? 0.0));
+			}
+			$error_delta_total = max(0.0, $in_errors_delta + $out_errors_delta);
+			$discard_delta_total = max(0.0, $in_discards_delta + $out_discards_delta);
+			$errors_trend = $counter_deltas[$port['in_errors_item_key']]['trend'] ?? 'n/a';
+			$out_errors_trend = $counter_deltas[$port['out_errors_item_key']]['trend'] ?? 'n/a';
+			if ($errors_trend === 'rising' || $out_errors_trend === 'rising') {
+				$errors_trend = 'rising';
+			}
+			elseif ($errors_trend === 'stable' || $out_errors_trend === 'stable') {
+				$errors_trend = 'stable';
+			}
+
+			$discards_trend = $counter_deltas[$port['in_discards_item_key']]['trend'] ?? 'n/a';
+			$out_discards_trend = $counter_deltas[$port['out_discards_item_key']]['trend'] ?? 'n/a';
+			if ($discards_trend === 'rising' || $out_discards_trend === 'rising') {
+				$discards_trend = 'rising';
+			}
+			elseif ($discards_trend === 'stable' || $out_discards_trend === 'stable') {
+				$discards_trend = 'stable';
+			}
+
+			$port['errors_24h_total'] = $error_delta_total;
+			$port['errors_24h_in'] = max(0.0, $in_errors_delta);
+			$port['errors_24h_out'] = max(0.0, $out_errors_delta);
+			$port['errors_24h_trend'] = $errors_trend;
+			$port['errors_24h_buckets'] = $errors_24h_buckets;
+			$port['discards_24h_total'] = $discard_delta_total;
+			$port['discards_24h_in'] = max(0.0, $in_discards_delta);
+			$port['discards_24h_out'] = max(0.0, $out_discards_delta);
+			$port['discards_24h_trend'] = $discards_trend;
+			$port['discards_24h_buckets'] = $discards_24h_buckets;
 		}
 		unset($port);
 
-			$this->setResponse(new CControllerResponseData([
+		$this->setResponse(new CControllerResponseData([
 				'name' => $widget_name,
 				'access_denied' => false,
 				'legend_text' => $legend_text,
 				'traffic_in_item_pattern' => $traffic_in_pattern,
 				'traffic_out_item_pattern' => $traffic_out_pattern,
+				'traffic_unit_mode' => $traffic_unit_mode,
+				'in_errors_item_pattern' => $in_errors_pattern,
+				'out_errors_item_pattern' => $out_errors_pattern,
+				'in_discards_item_pattern' => $in_discards_pattern,
+				'out_discards_item_pattern' => $out_discards_pattern,
 				'speed_item_pattern' => $speed_pattern,
 				'port_color_mode' => $port_color_mode,
 				'utilization_overlay_enabled' => $utilization_overlay_enabled,
@@ -513,6 +595,87 @@ class WidgetView extends CControllerDashboardWidgetView {
 			}
 
 			$result[$key] = $this->toFloat($row['lastvalue'] ?? 0);
+		}
+
+		return $result;
+	}
+
+	private function loadCounterDeltas24h(string $hostid, array $keys): array {
+		if ($hostid === '' || $keys === []) {
+			return [];
+		}
+
+		$rows = API::Item()->get([
+			'output' => ['itemid', 'key_', 'value_type'],
+			'hostids' => [$hostid],
+			'filter' => ['key_' => $keys]
+		]);
+
+		$result = [];
+		$time_from = time() - self::COUNTER_LOOKBACK_SECONDS;
+
+		foreach ($rows as $row) {
+			$key = (string) ($row['key_'] ?? '');
+			$value_type = (int) ($row['value_type'] ?? -1);
+			if ($key === '' || !in_array($value_type, [0, 3], true)) {
+				continue;
+			}
+
+			$history = API::History()->get([
+				'output' => ['clock', 'value'],
+				'itemids' => [(string) $row['itemid']],
+				'history' => $value_type,
+				'time_from' => $time_from,
+				'sortfield' => 'clock',
+				'sortorder' => 'ASC',
+				'limit' => self::COUNTER_POINTS
+			]);
+
+			if (!is_array($history) || $history === []) {
+				$result[$key] = [
+					'delta' => 0.0,
+					'trend' => 'n/a',
+					'buckets' => array_fill(0, self::STATE_BAR_BUCKETS, 0.0)
+				];
+				continue;
+			}
+
+			$buckets = array_fill(0, self::STATE_BAR_BUCKETS, 0.0);
+			$bucket_span = self::COUNTER_LOOKBACK_SECONDS / self::STATE_BAR_BUCKETS;
+			for ($i = 1, $n = count($history); $i < $n; $i++) {
+				$prev_value = (float) ($history[$i - 1]['value'] ?? 0);
+				$curr_value = (float) ($history[$i]['value'] ?? 0);
+				$curr_clock = (int) ($history[$i]['clock'] ?? 0);
+				$diff = $curr_value - $prev_value;
+				if ($diff < 0) {
+					$diff = max(0.0, $curr_value);
+				}
+				if ($diff <= 0.0) {
+					continue;
+				}
+
+				$idx = (int) floor(($curr_clock - $time_from) / $bucket_span);
+				$idx = max(0, min(self::STATE_BAR_BUCKETS - 1, $idx));
+				$buckets[$idx] += $diff;
+			}
+			$delta = array_sum($buckets);
+			$tail = array_slice($buckets, -6);
+			$prev = array_slice($buckets, -12, 6);
+			$tail_sum = array_sum($tail);
+			$prev_sum = array_sum($prev);
+			$trend = 'stable';
+			if ($tail_sum > 0.0 && ($prev_sum <= 0.0 || $tail_sum > ($prev_sum * 1.2))) {
+				$trend = 'rising';
+			}
+			elseif ($delta <= 0.0) {
+				$trend = 'stable';
+			}
+
+			$result[$key] = [
+				'delta' => $delta,
+				'trend' => $trend,
+				'buckets' => $buckets
+			];
 		}
 
 		return $result;
