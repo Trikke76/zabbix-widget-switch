@@ -66,12 +66,6 @@ class WidgetForm extends CWidgetForm {
 				->setDefault(self::DEFAULT_OUT_DISCARDS_PATTERN)
 		);
 		$this->addField(
-			(new CWidgetFieldSelect('port_color_mode', _('Port color mode'), [
-				0 => _('Trigger state'),
-				1 => _('Utilization heatmap')
-			]))->setDefault(0)
-		);
-		$this->addField(
 			(new CWidgetFieldSelect('utilization_overlay_enabled', _('Show utilization overlay'), [
 				0 => _('No'),
 				1 => _('Yes')

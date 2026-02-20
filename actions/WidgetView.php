@@ -44,14 +44,6 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$out_discards_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['out_discards_item_pattern'] ?? self::DEFAULT_OUT_DISCARDS_PATTERN), self::DEFAULT_OUT_DISCARDS_PATTERN);
 		$speed_pattern = substr($speed_pattern, 0, self::MAX_SPEED_PATTERN_LENGTH);
 		$speed_pattern_alt = $this->getAlternateSpeedPattern($speed_pattern);
-		$port_color_mode_raw = $this->fields_values['port_color_mode'] ?? 0;
-		if (is_array($port_color_mode_raw)) {
-			$port_color_mode_raw = reset($port_color_mode_raw);
-		}
-		$port_color_mode_int = (int) $port_color_mode_raw;
-		$port_color_mode = ($port_color_mode_int === 1 || (string) $port_color_mode_raw === 'utilization')
-			? 1
-			: 0;
 		$utilization_overlay_enabled = ((int) ($this->fields_values['utilization_overlay_enabled'] ?? 1)) === 1 ? 1 : 0;
 		$util_low_threshold = $this->clampFloat($this->extractFloat($this->fields_values['utilization_low_threshold'] ?? 5.0), 0.0, 100.0);
 		$util_warn_threshold = $this->clampFloat($this->extractFloat($this->fields_values['utilization_warn_threshold'] ?? 40.0), 0.0, 100.0);
@@ -101,7 +93,6 @@ class WidgetView extends CControllerDashboardWidgetView {
 					'in_discards_item_pattern' => $in_discards_pattern,
 					'out_discards_item_pattern' => $out_discards_pattern,
 					'speed_item_pattern' => $speed_pattern,
-				'port_color_mode' => $port_color_mode,
 				'utilization_overlay_enabled' => $utilization_overlay_enabled,
 				'utilization_low_threshold' => $util_low_threshold,
 				'utilization_warn_threshold' => $util_warn_threshold,
@@ -286,7 +277,6 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'in_discards_item_pattern' => $in_discards_pattern,
 				'out_discards_item_pattern' => $out_discards_pattern,
 				'speed_item_pattern' => $speed_pattern,
-				'port_color_mode' => $port_color_mode,
 				'utilization_overlay_enabled' => $utilization_overlay_enabled,
 				'utilization_low_threshold' => $util_low_threshold,
 				'utilization_warn_threshold' => $util_warn_threshold,

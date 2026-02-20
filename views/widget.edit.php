@@ -18,7 +18,6 @@ $form->addField(new CWidgetFieldTextBoxView($data['fields']['in_errors_item_patt
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['out_errors_item_pattern']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['in_discards_item_pattern']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['out_discards_item_pattern']));
-$form->addField(new CWidgetFieldSelectView($data['fields']['port_color_mode']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['utilization_overlay_enabled']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['speed_item_pattern']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_low_threshold']));

@@ -103,7 +103,6 @@ if (!empty($data['access_denied'])) {
 
 $columns = max(1, (int) ($data['ports_per_row'] ?? 12));
 $row_count = max(1, (int) ($data['row_count'] ?? 1));
-$port_color_mode = (int) ($data['port_color_mode'] ?? 0);
 $utilization_overlay_enabled = (int) ($data['utilization_overlay_enabled'] ?? 1);
 $show_utilization_overlay = ($utilization_overlay_enabled === 1);
 $traffic_unit_mode = (int) ($data['traffic_unit_mode'] ?? 0);
@@ -158,6 +157,7 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 	$util_color = isset($port['utilization_color']) && is_string($port['utilization_color'])
 		? (string) $port['utilization_color']
 		: $util_color_for($utilization);
+	$display_color = $show_utilization_overlay ? $util_color : $active_color;
 
 	if (empty($port['has_trigger'])) {
 		$state = _('No trigger');
@@ -361,10 +361,10 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 						->addClass('port24-led')
 						->setAttribute(
 							'style',
-							'background: '.$active_color.';'
+							'background: '.$display_color.';'
 							.'box-shadow:0 0 0 1px rgba(255,255,255,.2),'
-							.'0 0 calc(12px * var(--port24-scale)) '.$active_color.','
-							.'0 0 calc(20px * var(--port24-scale)) '.$active_color.';'
+							.'0 0 calc(12px * var(--port24-scale)) '.$display_color.','
+							.'0 0 calc(20px * var(--port24-scale)) '.$display_color.';'
 						)
 				)
 				->addItem((new CDiv($port['name']))->addClass('port24-label'));
@@ -508,12 +508,12 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 
 	$card
 		->addClass('port24-card')
-		->setAttribute('style', '--port-color: '.$active_color.';')
+		->setAttribute('style', '--port-color: '.$display_color.';')
 		->setAttribute('data-port-name', (string) $port['name']);
 	if ($show_utilization_overlay) {
 		$card
 			->addClass('port24-heatmap')
-			->setAttribute('style', '--port-color: '.$active_color.'; --util-c: '.$util_color.';');
+			->setAttribute('style', '--port-color: '.$display_color.'; --util-c: '.$util_color.';');
 	}
 
 	if (!empty($port['hostid'])) {

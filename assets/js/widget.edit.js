@@ -636,7 +636,7 @@
 
 		insertSection('traffic', 'Traffic Patterns', 'Traffic in item pattern');
 		insertSection('errors', 'Error and Discard Patterns', 'Errors in item pattern');
-		insertSection('util', 'Utilization Settings', 'Port color mode');
+		insertSection('util', 'Utilization Settings', 'Show utilization overlay');
 		insertSection('layout', 'Device Layout', 'Brand');
 	}
 
