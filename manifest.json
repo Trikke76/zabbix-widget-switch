@@ -4,7 +4,7 @@
   "type": "widget",
   "name": "Switch",
   "namespace": "SwitchWidget",
-  "version": "1.2",
+  "version": "1.2.2",
   "author": "Local",
   "description": "Switch-style dashboard widget with configurable rows/ports and trigger-based port status colors.",
   "url": "",

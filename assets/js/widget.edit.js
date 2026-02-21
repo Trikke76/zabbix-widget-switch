@@ -1944,6 +1944,7 @@
 	const itemSuggestionCache = new Map();
 	const itemSuggestionTimers = new WeakMap();
 	const itemSuggestionControllers = new WeakMap();
+	const itemSuggestionTrackedFields = new Set();
 
 	const ITEM_PATTERN_FIELD_NAMES = [
 		'traffic_in_item_pattern',
@@ -1981,6 +1982,27 @@
 		}
 		popup.innerHTML = '';
 		hideSuggestionPopupForField(field);
+	}
+
+	function cancelItemSuggestionForField(field) {
+		if (itemSuggestionTimers.has(field)) {
+			window.clearTimeout(itemSuggestionTimers.get(field));
+			itemSuggestionTimers.delete(field);
+		}
+		if (itemSuggestionControllers.has(field)) {
+			try {
+				itemSuggestionControllers.get(field).abort();
+			}
+			catch (error) { logDebug("silent catch", error); }
+			itemSuggestionControllers.delete(field);
+		}
+	}
+
+	function cancelAllItemSuggestions() {
+		for (const field of itemSuggestionTrackedFields) {
+			cancelItemSuggestionForField(field);
+			hideSuggestionPopupForField(field);
+		}
 	}
 
 	function ensureSuggestionPopupForField(field) {
@@ -2308,6 +2330,7 @@
 			}
 
 			field.dataset.port24ItemSuggestInit = '1';
+			itemSuggestionTrackedFields.add(field);
 			ensureSuggestionPopupForField(field);
 			field.addEventListener('focus', () => scheduleItemSuggestionsForField(field));
 			field.addEventListener('input', () => scheduleItemSuggestionsForField(field));
@@ -2500,6 +2523,7 @@
 						clearInterval(window.switch_widget_form._refreshTimer);
 						window.switch_widget_form._refreshTimer = null;
 					}
+					cancelAllItemSuggestions();
 				if (window.switch_widget_form._refreshObserver) {
 					window.switch_widget_form._refreshObserver.disconnect();
 					window.switch_widget_form._refreshObserver = null;

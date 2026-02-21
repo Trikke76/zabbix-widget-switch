@@ -83,11 +83,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 			'uptime' => $summary_uptime_item_key,
 			'serial' => $summary_serial_item_key
 		];
-		$summary_items = $this->loadSummaryItems($hostid, $summary_item_keys);
-		$switch_summary = $this->buildSwitchSummary($host_meta, $layout, $ports, $summary_item_keys, $summary_items);
 		$switch_brand = $this->resolveSwitchBrand($host_meta);
 		$switch_model = trim((string) ($this->fields_values['switch_model'] ?? 'SW-24G'));
-		$trigger_meta = $this->loadTriggerMeta($ports);
 		$widget_name = trim((string) $this->getInput('name', ''));
 		if ($widget_name === '') {
 			$widget_name = trim((string) ($this->fields_values['name'] ?? ''));
@@ -142,7 +139,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'row_count' => $layout['row_count'],
 				'ports_per_row' => $layout['ports_per_row'],
 				'sfp_ports' => $layout['sfp_ports'],
-				'switch_summary' => $switch_summary,
+				'switch_summary' => $this->buildSwitchSummary($host_meta, $layout, $ports),
 				'ports' => [],
 				'user' => [
 					'debug_mode' => $this->getDebugMode()
@@ -152,6 +149,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 			return;
 		}
 
+		$trigger_meta = $this->loadTriggerMeta($ports);
 		$sfp_start_index = max(1, $layout['total_ports'] - $layout['sfp_ports'] + 1);
 
 		foreach ($ports as $index => &$port) {
@@ -290,6 +288,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$port['discards_24h_buckets'] = $discards_24h_buckets;
 		}
 		unset($port);
+		$summary_items = $this->loadSummaryItems($hostid, $summary_item_keys);
 		$switch_summary = $this->buildSwitchSummary($host_meta, $layout, $ports, $summary_item_keys, $summary_items);
 
 		$this->setResponse(new CControllerResponseData([
