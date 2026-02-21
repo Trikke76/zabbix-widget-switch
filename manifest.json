@@ -20,6 +20,9 @@
     },
     "widget.switch.traffic": {
       "class": "WidgetTraffic"
+    },
+    "widget.switch.items": {
+      "class": "WidgetItems"
     }
   }
 }

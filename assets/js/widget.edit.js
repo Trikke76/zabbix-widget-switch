@@ -438,7 +438,12 @@
 			'.port24-compact-main-grid{display:grid;grid-template-columns:repeat(2,max-content);gap:8px 20px;grid-column:1 / -1;align-items:start;justify-content:start;width:fit-content;max-width:100%;}',
 			'.port24-compact-main-pair{display:grid;grid-template-columns:1fr;row-gap:4px;align-items:start;}',
 			'.port24-compact-main-pair > label{text-align:left;margin:0;}',
-			'.port24-compact-main-pair > .form-field{margin:0 !important;width:auto !important;min-width:0 !important;max-width:none !important;}'
+			'.port24-compact-main-pair > .form-field{margin:0 !important;width:auto !important;min-width:0 !important;max-width:none !important;}',
+			'.port24-item-suggest-pop{position:absolute;left:0;right:0;top:100%;margin-top:2px;z-index:1200;background:#1b2430;border:1px solid #3a4655;border-radius:4px;box-shadow:0 10px 24px rgba(0,0,0,.35);max-height:220px;overflow:auto;}',
+			'.port24-item-suggest-pop.is-hidden{display:none;}',
+			'.port24-item-suggest-item{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:0;background:transparent;color:#e6edf7;padding:6px 8px;text-align:left;cursor:pointer;font-size:12px;}',
+			'.port24-item-suggest-item:hover{background:#2a3443;}',
+			'.port24-item-suggest-kind{font-size:10px;color:#9fb2c8;white-space:nowrap;}'
 		].join('');
 		document.head.appendChild(style);
 	}
@@ -672,12 +677,23 @@
 		const onPickerOutsideClick = (event) => {
 			const target = event.target instanceof Element ? event.target : null;
 			const ownerPicker = target ? target.closest('.port24-modern-picker') : null;
+			const ownerSuggest = target ? target.closest('.port24-item-suggest-pop') : null;
 
 			for (const pop of document.querySelectorAll('.port24-modern-picker .port24-pop')) {
 				if (pop.classList.contains('is-hidden')) {
 					continue;
 				}
 				if (ownerPicker && ownerPicker.contains(pop)) {
+					continue;
+				}
+				pop.classList.add('is-hidden');
+			}
+
+			for (const pop of document.querySelectorAll('.port24-item-suggest-pop')) {
+				if (pop.classList.contains('is-hidden')) {
+					continue;
+				}
+				if (ownerSuggest && ownerSuggest === pop) {
 					continue;
 				}
 				pop.classList.add('is-hidden');
@@ -1924,6 +1940,382 @@
 
 	let currentTriggerHostid = '';
 	let currentTriggerOptions = [];
+	let currentItemSuggestionHostid = '';
+	const itemSuggestionCache = new Map();
+	const itemSuggestionTimers = new WeakMap();
+	const itemSuggestionControllers = new WeakMap();
+
+	const ITEM_PATTERN_FIELD_NAMES = [
+		'traffic_in_item_pattern',
+		'traffic_out_item_pattern',
+		'in_errors_item_pattern',
+		'out_errors_item_pattern',
+		'in_discards_item_pattern',
+		'out_discards_item_pattern',
+		'speed_item_pattern',
+		'summary_software_item_key',
+		'summary_vlans_item_key',
+		'summary_cpu_item_key',
+		'summary_fan_item_key',
+		'summary_uptime_item_key',
+		'summary_serial_item_key'
+	];
+
+	function getItemPatternFields() {
+		return ITEM_PATTERN_FIELD_NAMES
+			.map((name) => findField(name))
+			.filter((field) => field && field.tagName === 'INPUT');
+	}
+
+	function hideSuggestionPopupForField(field) {
+		const popup = field._port24SuggestPopup;
+		if (popup) {
+			popup.classList.add('is-hidden');
+		}
+	}
+
+	function clearSuggestionListForField(field) {
+		const popup = field._port24SuggestPopup;
+		if (!popup) {
+			return;
+		}
+		popup.innerHTML = '';
+		hideSuggestionPopupForField(field);
+	}
+
+	function ensureSuggestionPopupForField(field) {
+		if (field._port24SuggestPopup) {
+			return field._port24SuggestPopup;
+		}
+
+		const wrap = field.closest('.form-field');
+		if (!wrap) {
+			return null;
+		}
+
+		if (getComputedStyle(wrap).position === 'static') {
+			wrap.style.position = 'relative';
+		}
+
+		const popup = document.createElement('div');
+		popup.className = 'port24-item-suggest-pop is-hidden';
+		wrap.appendChild(popup);
+		field._port24SuggestPopup = popup;
+		return popup;
+	}
+
+	function parseSuggestionsPayload(text) {
+		const parsePayload = (raw) => {
+			const payload = JSON.parse(raw);
+			if (Array.isArray(payload.suggestions)) {
+				return payload;
+			}
+			if (payload.main_block) {
+				const nested = JSON.parse(payload.main_block);
+				if (Array.isArray(nested.suggestions)) {
+					return nested;
+				}
+			}
+			return null;
+		};
+
+		const extractEmbeddedJson = (raw) => {
+			const marker = '{"suggestions":';
+			const start = raw.indexOf(marker);
+			if (start === -1) {
+				return null;
+			}
+
+			let inString = false;
+			let escaped = false;
+			let depth = 0;
+			for (let i = start; i < raw.length; i++) {
+				const ch = raw[i];
+				if (escaped) {
+					escaped = false;
+					continue;
+				}
+				if (ch === '\\') {
+					escaped = true;
+					continue;
+				}
+				if (ch === '"') {
+					inString = !inString;
+					continue;
+				}
+				if (inString) {
+					continue;
+				}
+				if (ch === '{') {
+					depth++;
+				}
+				else if (ch === '}') {
+					depth--;
+					if (depth === 0) {
+						return raw.slice(start, i + 1);
+					}
+				}
+			}
+			return null;
+		};
+
+		try {
+			const parsed = parsePayload(text);
+			if (parsed !== null) {
+				return parsed;
+			}
+		}
+		catch (error) { logDebug("silent catch", error); }
+
+		const embedded = extractEmbeddedJson(text);
+		if (embedded !== null) {
+			try {
+				const parsed = parsePayload(embedded);
+				if (parsed !== null) {
+					return parsed;
+				}
+			}
+			catch (error) { logDebug("silent catch", error); }
+		}
+
+		return {suggestions: []};
+	}
+
+	function fetchItemSuggestions(hostid, query, signal) {
+		const url = new URL('zabbix.php', window.location.origin);
+		url.searchParams.set('action', 'widget.switch.items');
+		url.searchParams.set('output', 'ajax');
+		url.searchParams.set('hostid', hostid);
+		url.searchParams.set('q', query);
+
+		return fetch(url.toString(), {
+			method: 'GET',
+			credentials: 'same-origin',
+			headers: {'X-Requested-With': 'XMLHttpRequest'},
+			signal
+		})
+			.then((response) => response.text())
+			.then((text) => parseSuggestionsPayload(text).suggestions || []);
+	}
+
+	function normalizeSuggestionToken(text) {
+		return String(text || '')
+			.trim()
+			.toLowerCase()
+			.replace(/\[\*\]/g, '')
+			.replace(/\*/g, '')
+			.replace(/[\[\]]/g, '');
+	}
+
+	function getSuggestionPrefixFallbacks(text) {
+		const token = normalizeSuggestionToken(text);
+		if (token.length < 3) {
+			return [];
+		}
+
+		const tokens = [];
+		for (let len = token.length; len >= 3; len--) {
+			tokens.push(token.slice(0, len));
+		}
+		return tokens;
+	}
+
+	function filterSuggestionsLocally(suggestions, query, limit = 50) {
+		const q = normalizeSuggestionToken(query);
+		if (q === '') {
+			return suggestions.slice(0, limit);
+		}
+
+		const out = [];
+		for (const item of suggestions) {
+			if (!item || typeof item !== 'object') {
+				continue;
+			}
+			const value = normalizeSuggestionToken(item.value || '');
+			const label = normalizeSuggestionToken(item.label || '');
+			if (value.startsWith(q) || label.startsWith(q)) {
+				out.push(item);
+				if (out.length >= limit) {
+					break;
+				}
+			}
+		}
+		return out;
+	}
+
+	function applySuggestionsToField(field, suggestions) {
+		const popup = ensureSuggestionPopupForField(field);
+		if (!popup) {
+			return;
+		}
+		popup.innerHTML = '';
+		if (!Array.isArray(suggestions) || suggestions.length === 0) {
+			popup.classList.add('is-hidden');
+			return;
+		}
+
+		for (const item of suggestions) {
+			if (!item || typeof item !== 'object') {
+				continue;
+			}
+			const value = String(item.value || '').trim();
+			if (value === '') {
+				continue;
+			}
+
+			const row = document.createElement('button');
+			row.type = 'button';
+			row.className = 'port24-item-suggest-item';
+
+			const label = document.createElement('span');
+			label.textContent = String(item.label || value);
+			const kind = document.createElement('span');
+			kind.className = 'port24-item-suggest-kind';
+			kind.textContent = item.type === 'pattern' ? '[*]' : 'item';
+
+			row.appendChild(label);
+			row.appendChild(kind);
+			const applySuggestion = () => {
+				field.value = value;
+				field.dispatchEvent(new Event('input', {bubbles: true}));
+				field.dispatchEvent(new Event('change', {bubbles: true}));
+				hideSuggestionPopupForField(field);
+			};
+			// Use mousedown so selection still works when the input loses focus on click.
+			row.addEventListener('mousedown', (event) => {
+				event.preventDefault();
+				event.stopPropagation();
+				applySuggestion();
+			});
+			row.addEventListener('click', (event) => {
+				event.preventDefault();
+				event.stopPropagation();
+				applySuggestion();
+			});
+			popup.appendChild(row);
+		}
+
+		popup.classList.remove('is-hidden');
+	}
+
+	function scheduleItemSuggestionsForField(field) {
+		const hostid = String(currentItemSuggestionHostid || '');
+		if (hostid === '') {
+			clearSuggestionListForField(field);
+			return;
+		}
+
+		const query = String(field.value || '').trim();
+		const seed = String(field.dataset.port24SuggestSeed || '').trim();
+		const effectiveQuery = query !== '' ? query : seed;
+		const fallbackTokens = getSuggestionPrefixFallbacks(effectiveQuery);
+		if (fallbackTokens.length === 0) {
+			clearSuggestionListForField(field);
+			return;
+		}
+
+		if (itemSuggestionTimers.has(field)) {
+			window.clearTimeout(itemSuggestionTimers.get(field));
+		}
+
+		const timerId = window.setTimeout(() => {
+			if (itemSuggestionControllers.has(field)) {
+				try {
+					itemSuggestionControllers.get(field).abort();
+				}
+				catch (error) { logDebug("silent catch", error); }
+			}
+
+			const controller = new AbortController();
+			itemSuggestionControllers.set(field, controller);
+
+			Promise.resolve()
+				.then(async () => {
+					for (const token of fallbackTokens) {
+						const cacheKey = `${hostid}|${token}`;
+						let suggestions = itemSuggestionCache.get(cacheKey);
+						if (!suggestions) {
+							suggestions = await fetchItemSuggestions(hostid, token, controller.signal);
+							itemSuggestionCache.set(cacheKey, suggestions);
+						}
+
+						const filtered = filterSuggestionsLocally(suggestions, effectiveQuery, 50);
+						if (filtered.length > 0) {
+							return filtered;
+						}
+					}
+
+					return [];
+				})
+				.then((filtered) => {
+					if (String(currentItemSuggestionHostid || '') !== hostid) {
+						return;
+					}
+					applySuggestionsToField(field, filtered);
+				})
+				.catch((error) => {
+					if (error && error.name === 'AbortError') {
+						return;
+					}
+					logDebug('item suggestions request failed', error);
+				});
+		}, 180);
+
+		itemSuggestionTimers.set(field, timerId);
+	}
+
+	function setItemSuggestionHost(hostid) {
+		const nextHostid = String(hostid || '');
+		if (nextHostid === currentItemSuggestionHostid) {
+			return;
+		}
+
+		currentItemSuggestionHostid = nextHostid;
+		itemSuggestionCache.clear();
+
+		for (const field of getItemPatternFields()) {
+			clearSuggestionListForField(field);
+			if (nextHostid !== '') {
+				scheduleItemSuggestionsForField(field);
+			}
+		}
+	}
+
+	function ensureItemPatternAutocomplete() {
+		for (const field of getItemPatternFields()) {
+			if (field.dataset.port24ItemSuggestInit === '1') {
+				continue;
+			}
+
+			const token = String(field.name || field.id || '').toLowerCase();
+			if (token.includes('traffic_out_item_pattern')) {
+				field.dataset.port24SuggestSeed = 'ifOut';
+			}
+			else if (token.includes('traffic_in_item_pattern')) {
+				field.dataset.port24SuggestSeed = 'ifIn';
+			}
+			else if (token.includes('out_errors_item_pattern')) {
+				field.dataset.port24SuggestSeed = 'ifOutErrors';
+			}
+			else if (token.includes('in_errors_item_pattern')) {
+				field.dataset.port24SuggestSeed = 'ifInErrors';
+			}
+			else if (token.includes('out_discards_item_pattern')) {
+				field.dataset.port24SuggestSeed = 'ifOutDiscards';
+			}
+			else if (token.includes('in_discards_item_pattern')) {
+				field.dataset.port24SuggestSeed = 'ifInDiscards';
+			}
+
+			field.dataset.port24ItemSuggestInit = '1';
+			ensureSuggestionPopupForField(field);
+			field.addEventListener('focus', () => scheduleItemSuggestionsForField(field));
+			field.addEventListener('input', () => scheduleItemSuggestionsForField(field));
+			field.addEventListener('blur', () => {
+				window.setTimeout(() => hideSuggestionPopupForField(field), 120);
+			});
+		}
+	}
 
 	function setSelectLightOptions(select, hostid, selectedValue = '') {
 		const selected = String(selectedValue || select.value || '');
@@ -2154,6 +2546,7 @@
 						ensureEditSections();
 						ensureUtilizationControls();
 						ensureBulkControls();
+						ensureItemPatternAutocomplete();
 
 					uiBootstrapped = true;
 					lastLayoutKey = layoutKey;
@@ -2164,6 +2557,7 @@
 				}
 
 				previousHostId = hostid;
+				setItemSuggestionHost(hostid);
 				if (hostid === '') {
 					applyTriggers([], '');
 					return;
