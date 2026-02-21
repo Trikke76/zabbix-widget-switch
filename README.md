@@ -1,4 +1,4 @@
-# Switch Widget (Zabbix 7.0)
+# Switch Widget (Zabbix 7.x)
 
 Uses native Zabbix selection fields.
 
@@ -15,17 +15,16 @@ Uses native Zabbix selection fields.
 5. Optional: set `Legend text` (leave empty to hide).
 6. Optional: set traffic patterns (`Traffic in item pattern`, `Traffic out item pattern`) using `*` as port placeholder (example: `ifInOctets[*]`).
 7. Optional: set `Speed item pattern` (example: `ifHighSpeed[*]`) for utilization calculations.
-8. Optional: set `Port color mode` to `Utilization heatmap`.
-9. Optional: set `Show utilization overlay` to enable/disable heatmap strip + grid.
-10. Optional: tune utilization thresholds (`Low`, `Warn`, `High`) and colors (`Low`, `Warn`, `High`, `n/a`).
-11. Optional: select `Profile` to auto-fill layout (`Rows`, `Ports per row`, `SFP ports`, `Size (%)`, `Brand`, `Model`).
-12. Optional: rename profile directly next to `Profile`.
-13. Optional: use `Save current to selected profile` to overwrite selected profile (1-7).
-14. Set optional `Size (%)` (40-100) to make switch compact.
-15. Set optional `SFP ports` (0 = none, 2 = two extra SFP ports).
-16. Select per-port `Trigger` from dropdown (for selected host).
-17. Set per-port `Default color`, `Trigger OK color` and `Trigger NOK color`.
-18. Optional: use `Bulk actions` to apply one color to all ports for each state.
+8. Optional: set `Show utilization overlay` to enable/disable heatmap strip + grid.
+9. Optional: tune utilization thresholds (`Low`, `Warn`, `High`) and colors (`Low`, `Warn`, `High`, `n/a`).
+10. Optional: select `Profile` to auto-fill layout (`Rows`, `Ports per row`, `SFP ports`, `Size (%)`, `Brand`, `Model`).
+11. Optional: rename profile directly next to `Profile`.
+12. Optional: use `Save current to selected profile` to overwrite selected profile (1-7).
+13. Set optional `Size (%)` (40-100) to make switch compact.
+14. Set optional `SFP ports` (0 = none, 2 = two extra SFP ports).
+15. Select per-port `Trigger` from dropdown (for selected host).
+16. Set per-port `Default color`, `Trigger OK color` and `Trigger NOK color`.
+17. Optional: use `Bulk actions` to apply one color to all ports for each state.
 
 Note: Trigger options are rendered server-side from selected host.
 If you change host, reopen widget edit to refresh trigger lists.
@@ -42,13 +41,19 @@ If you change host, reopen widget edit to refresh trigger lists.
   - state/type/trigger text
   - IN/OUT sparkline + latest value (when user has item read permission)
 
-## Release Notes 1.0.10
+## Release Notes 1.1.0
 
-- Added configurable 24h tooltip bars for `Errors` and `Discards` (in/out totals + trend).
-- Added compact, grouped edit UI sections (`Traffic Patterns`, `Error and Discard Patterns`, `Utilization Settings`, `Device Layout`).
-- Added/updated utilization controls with overlay toggle, thresholds and custom colors.
-- Improved edit-form sizing consistency (pattern fields, numeric fields, brand/model).
-- Updated picker styling in edit UI for cleaner, borderless color swatches.
+- Improved Zabbix 7.4 compatibility in edit dialog initialization (custom bulk container no longer initialized as core collapsible).
+- Improved profile save responsiveness by reducing unnecessary UI refresh/event storms after save.
+- Fixed save button state race (`Saving...` stuck/duplicate trigger path).
+- Unified modern color picker behavior and optimized picker rendering performance.
+- Cleaned up duplicate field sizing/maxlength enforcement paths in edit UI.
+
+## Compatibility Note
+
+- Primary target: Zabbix `7.0`.
+- Should also work on Zabbix `7.2` and `7.4`.
+- `7.2` and `7.4` are currently **not actively tested or maintained**.
 
 ## Profile Storage Permissions
 

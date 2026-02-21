@@ -240,95 +240,20 @@
 				'Discards out item pattern',
 				'Speed item pattern'
 			], 30, 30);
-			const shortTextFieldNames = [
-				'switch_brand',
-				'switch_model'
-			];
-			for (const name of shortTextFieldNames) {
-				const field = findField(name);
-				if (!field || field.dataset.port24ShortTextInit === '1') {
-					continue;
-				}
-				field.maxLength = 30;
-				field.setAttribute('maxlength', '30');
-				setCompactChars(field, 30);
-				field.dataset.port24ShortTextInit = '1';
-			}
 			enforceTextFieldsByLabels(['Brand', 'Model'], 30, 30);
-			for (const selector of [
-				'input[name="switch_brand"]',
-				'input[name="switch_model"]',
-				'input[name="fields[switch_brand]"]',
-				'input[name="fields[switch_model]"]'
-			]) {
-				for (const field of document.querySelectorAll(selector)) {
-					field.setAttribute('maxlength', '30');
-					setCompactChars(field, 30);
-				}
-			}
-
-			const compactNumericFields = [
-				'switch_size',
-				'row_count',
-				'ports_per_row',
-				'sfp_ports'
-			];
-			for (const name of compactNumericFields) {
-				const field = findField(name);
-				if (!field || field.dataset.port24CompactNumInit === '1') {
-					continue;
-				}
-				field.maxLength = 4;
-				field.setAttribute('maxlength', '4');
-				setCompactChars(field, 6);
-				field.style.textAlign = 'right';
-				field.addEventListener('input', () => {
-					let text = String(field.value || '').replace(/[^0-9]/g, '');
-					if (text.length > 4) {
-						text = text.slice(0, 4);
-					}
-					field.value = text;
-				});
-				field.dataset.port24CompactNumInit = '1';
-			}
 			enforceTextFieldsByLabels(['Size (%)', 'Rows', 'Ports per row', 'SFP ports'], 6, 4, {numericOnly: true});
 			ensureCompactMainLayout();
-
-			const thresholdFieldNames = [
-				'utilization_low_threshold',
-			'utilization_warn_threshold',
-			'utilization_high_threshold'
-		];
-		for (const name of thresholdFieldNames) {
-			const field = findField(name);
-				if (!field || field.dataset.port24UtilThresholdInit === '1') {
-					continue;
+			enforceTextFieldsByLabels([
+				'Utilization low threshold (%)',
+				'Utilization warn threshold (%)',
+				'Utilization high threshold (%)'
+			], 6, 4, {numericOnly: true, allowDecimal: true});
+			for (const name of ['utilization_low_threshold', 'utilization_warn_threshold', 'utilization_high_threshold']) {
+				const field = findField(name);
+				if (field) {
+					field.placeholder = '0-100';
 				}
-
-				field.maxLength = 4;
-				field.setAttribute('maxlength', '4');
-				setCompactChars(field, 6);
-				field.style.textAlign = 'right';
-			field.placeholder = '0-100';
-			field.addEventListener('input', () => {
-				let text = String(field.value || '').replace(',', '.');
-				text = text.replace(/[^0-9.]/g, '');
-				const firstDot = text.indexOf('.');
-				if (firstDot !== -1) {
-					text = text.slice(0, firstDot + 1) + text.slice(firstDot + 1).replace(/\./g, '');
-				}
-				if (text.length > 4) {
-					text = text.slice(0, 4);
-				}
-				field.value = text;
-			});
-			field.dataset.port24UtilThresholdInit = '1';
-		}
-		enforceTextFieldsByLabels([
-			'Utilization low threshold (%)',
-			'Utilization warn threshold (%)',
-			'Utilization high threshold (%)'
-		], 6, 4, {numericOnly: true, allowDecimal: true});
+			}
 
 		function ensureCompactMainLayout() {
 			const compactNames = ['switch_size', 'row_count', 'ports_per_row', 'sfp_ports'];
@@ -438,67 +363,7 @@
 	}
 
 	function ensureColorPickerForField(field) {
-		const token = `${field.name || ''} ${field.id || ''}`;
-		if (/port\d+_(default_color|trigger_ok_color|trigger_color)/.test(token)) {
-			ensureNativeColorPickerForField(field);
-			return;
-		}
-
 		ensureModernPickerForField(field);
-	}
-
-	function ensureNativeColorPickerForField(field) {
-		if (field.dataset.port24ColorInit === '1') {
-			return;
-		}
-
-		const wrapper = document.createElement('span');
-		wrapper.style.display = 'inline-flex';
-		wrapper.style.alignItems = 'center';
-		wrapper.style.gap = '8px';
-		wrapper.style.width = '100%';
-
-		const picker = document.createElement('input');
-		picker.type = 'color';
-		picker.style.width = '42px';
-		picker.style.minWidth = '42px';
-		picker.style.height = '24px';
-		picker.style.padding = '0';
-		picker.style.border = '0';
-		picker.style.background = 'transparent';
-		picker.style.outline = 'none';
-		picker.style.boxShadow = 'none';
-		picker.style.appearance = 'none';
-		picker.style.webkitAppearance = 'none';
-
-		const parent = field.parentNode;
-		if (!parent) {
-			return;
-		}
-
-		const fallback = getColorFallback(field);
-		field.value = normalizeHexColor(field.value, fallback);
-		picker.value = field.value;
-
-		field.style.flex = '1 1 auto';
-		field.style.minWidth = '0';
-
-		parent.insertBefore(wrapper, field);
-		wrapper.appendChild(field);
-		wrapper.appendChild(picker);
-
-		picker.addEventListener('input', () => {
-			field.value = picker.value.toUpperCase();
-			field.dispatchEvent(new Event('change', {bubbles: true}));
-		});
-
-		field.addEventListener('input', () => {
-			const normalized = normalizeHexColor(field.value, picker.value || fallback);
-			field.value = normalized;
-			picker.value = normalized;
-		});
-
-		field.dataset.port24ColorInit = '1';
 	}
 
 	function setFieldColor(field, color, dispatchEvents = true) {
@@ -729,19 +594,27 @@
 			}
 		};
 
-		for (const color of palette) {
-			const dot = document.createElement('button');
-			dot.type = 'button';
-			dot.className = 'port24-dot';
-			dot.style.background = color;
-			dot.addEventListener('click', () => {
-				setValue(color);
-				pop.classList.add('is-hidden');
-			});
-			grid.appendChild(dot);
-		}
+		let colorsBuilt = false;
+		const ensureColorDots = () => {
+			if (colorsBuilt) {
+				return;
+			}
+			for (const color of palette) {
+				const dot = document.createElement('button');
+				dot.type = 'button';
+				dot.className = 'port24-dot';
+				dot.style.background = color;
+				dot.addEventListener('click', () => {
+					setValue(color);
+					pop.classList.add('is-hidden');
+				});
+				grid.appendChild(dot);
+			}
+			colorsBuilt = true;
+		};
 
 		const showColors = () => {
+			ensureColorDots();
 			tabColors.classList.add('is-active');
 			tabCustom.classList.remove('is-active');
 			colorsWrap.classList.remove('is-hidden');
@@ -772,13 +645,8 @@
 		});
 
 		button.addEventListener('click', () => {
+			ensureColorDots();
 			pop.classList.toggle('is-hidden');
-		});
-
-		document.addEventListener('click', (event) => {
-			if (!root.contains(event.target)) {
-				pop.classList.add('is-hidden');
-			}
 		});
 
 		setValue(value, false);
@@ -788,6 +656,30 @@
 			getValue: () => value,
 			setValue
 		};
+	}
+
+	function ensureGlobalPickerOutsideClick() {
+		if (window.switch_widget_form._onPickerOutsideClick) {
+			return;
+		}
+
+		const onPickerOutsideClick = (event) => {
+			const target = event.target instanceof Element ? event.target : null;
+			const ownerPicker = target ? target.closest('.port24-modern-picker') : null;
+
+			for (const pop of document.querySelectorAll('.port24-modern-picker .port24-pop')) {
+				if (pop.classList.contains('is-hidden')) {
+					continue;
+				}
+				if (ownerPicker && ownerPicker.contains(pop)) {
+					continue;
+				}
+				pop.classList.add('is-hidden');
+			}
+		};
+
+		document.addEventListener('click', onPickerOutsideClick);
+		window.switch_widget_form._onPickerOutsideClick = onPickerOutsideClick;
 	}
 
 	function ensureBulkControls() {
@@ -811,17 +703,18 @@
 			/port\d+_trigger_color/.test(`${field.name || ''} ${field.id || ''}`)
 		);
 
-		const panel = document.createElement('fieldset');
+		const panel = document.createElement('div');
 		panel.id = 'port24-bulk-tools';
-		panel.className = 'collapsible';
+		panel.className = 'switch-bulk-tools';
 		panel.style.padding = '12px';
 		panel.style.border = '1px solid #dfe4ea';
 		panel.style.borderRadius = '4px';
 		panel.style.marginBottom = '12px';
 
-		const title = document.createElement('legend');
+		const title = document.createElement('h4');
 		title.textContent = 'Bulk actions';
 		title.style.fontWeight = '600';
+		title.style.margin = '0 0 8px 0';
 		panel.appendChild(title);
 
 		const row = document.createElement('div');
@@ -923,14 +816,21 @@
 		return null;
 	}
 
-	function setSimpleFieldValue(fieldName, value) {
+	function setSimpleFieldValue(fieldName, value, options = {}) {
+		const {dispatchEvents = true} = options;
 		const field = findField(fieldName);
 		if (!field) {
 			return;
 		}
-		field.value = String(value);
-		field.dispatchEvent(new Event('input', {bubbles: true}));
-		field.dispatchEvent(new Event('change', {bubbles: true}));
+		const next = String(value);
+		if (String(field.value || '') === next) {
+			return;
+		}
+		field.value = next;
+		if (dispatchEvents) {
+			field.dispatchEvent(new Event('input', {bubbles: true}));
+			field.dispatchEvent(new Event('change', {bubbles: true}));
+		}
 	}
 
 	function getCsrfTokenField() {
@@ -1324,23 +1224,29 @@
 					return String(entry.value) === String(presetId) ? {...entry, label: labelText} : entry;
 				}));
 			};
-			const refreshPresetSelectUi = () => {
+			const refreshPresetSelectUi = (options = {}) => {
+				const {emitChange = true} = options;
 				const currentValue = String(presetField.value || '0');
 				// Force repaint of native/select-enhanced controls.
 				rebuildPresetOptionsFromFields();
-				presetField.value = '0';
 				presetField.value = currentValue;
 				presetField.setAttribute('value', currentValue);
 				updatePresetRenderedLabel();
-				presetField.dispatchEvent(new Event('input', {bubbles: true}));
-				presetField.dispatchEvent(new Event('change', {bubbles: true}));
+				if (emitChange) {
+					presetField.dispatchEvent(new Event('input', {bubbles: true}));
+					presetField.dispatchEvent(new Event('change', {bubbles: true}));
+				}
 				if (window.jQuery) {
-				const $preset = window.jQuery(presetField);
-				$preset.trigger('change.select2').trigger('change');
-			}
-				window.setTimeout(updatePresetRenderedLabel, 0);
-				window.setTimeout(updatePresetRenderedLabel, 120);
-		};
+					const $preset = window.jQuery(presetField);
+					if (emitChange) {
+						$preset.trigger('change.select2').trigger('change');
+					}
+					else {
+						$preset.trigger('change.select2');
+					}
+				}
+				window.requestAnimationFrame(updatePresetRenderedLabel);
+			};
 		const applyProfilesFromPayload = (payload) => {
 			if (!payload || typeof payload !== 'object' || !payload.profiles || typeof payload.profiles !== 'object') {
 				return;
@@ -1353,36 +1259,34 @@
 					continue;
 				}
 
-				if (Object.prototype.hasOwnProperty.call(profile, 'name')) {
-					setSimpleFieldValue(`profile${presetId}_name`, String(profile.name || '').slice(0, 15));
+					if (Object.prototype.hasOwnProperty.call(profile, 'name')) {
+						setSimpleFieldValue(`profile${presetId}_name`, String(profile.name || '').slice(0, 15), {dispatchEvents: false});
+					}
+					if (Object.prototype.hasOwnProperty.call(profile, 'row_count')) {
+						setSimpleFieldValue(`profile${presetId}_row_count`, String(profile.row_count || '2'), {dispatchEvents: false});
+					}
+					if (Object.prototype.hasOwnProperty.call(profile, 'ports_per_row')) {
+						setSimpleFieldValue(`profile${presetId}_ports_per_row`, String(profile.ports_per_row || '12'), {dispatchEvents: false});
+					}
+					if (Object.prototype.hasOwnProperty.call(profile, 'sfp_ports')) {
+						setSimpleFieldValue(`profile${presetId}_sfp_ports`, String(profile.sfp_ports || '0'), {dispatchEvents: false});
+					}
+					if (Object.prototype.hasOwnProperty.call(profile, 'switch_size')) {
+						setSimpleFieldValue(`profile${presetId}_switch_size`, String(profile.switch_size || '100'), {dispatchEvents: false});
+					}
+					if (Object.prototype.hasOwnProperty.call(profile, 'switch_brand')) {
+						setSimpleFieldValue(`profile${presetId}_switch_brand`, String(profile.switch_brand || 'NETSWITCH'), {dispatchEvents: false});
+					}
+					if (Object.prototype.hasOwnProperty.call(profile, 'switch_model')) {
+						setSimpleFieldValue(`profile${presetId}_switch_model`, String(profile.switch_model || 'SW-24G'), {dispatchEvents: false});
+					}
 				}
-				if (Object.prototype.hasOwnProperty.call(profile, 'row_count')) {
-					setSimpleFieldValue(`profile${presetId}_row_count`, String(profile.row_count || '2'));
-				}
-				if (Object.prototype.hasOwnProperty.call(profile, 'ports_per_row')) {
-					setSimpleFieldValue(`profile${presetId}_ports_per_row`, String(profile.ports_per_row || '12'));
-				}
-				if (Object.prototype.hasOwnProperty.call(profile, 'sfp_ports')) {
-					setSimpleFieldValue(`profile${presetId}_sfp_ports`, String(profile.sfp_ports || '0'));
-				}
-				if (Object.prototype.hasOwnProperty.call(profile, 'switch_size')) {
-					setSimpleFieldValue(`profile${presetId}_switch_size`, String(profile.switch_size || '100'));
-				}
-				if (Object.prototype.hasOwnProperty.call(profile, 'switch_brand')) {
-					setSimpleFieldValue(`profile${presetId}_switch_brand`, String(profile.switch_brand || 'NETSWITCH'));
-				}
-				if (Object.prototype.hasOwnProperty.call(profile, 'switch_model')) {
-					setSimpleFieldValue(`profile${presetId}_switch_model`, String(profile.switch_model || 'SW-24G'));
-				}
-			}
 
-			rebuildPresetOptionsFromFields();
-			refreshPresetSelectUi();
-			refreshNameEditor();
-		};
-		const persistProfiles = () => {};
-		const applyStoredProfiles = () => {};
-		const syncSelectedProfileName = () => {
+				rebuildPresetOptionsFromFields();
+				refreshPresetSelectUi({emitChange: false});
+				refreshNameEditor();
+			};
+			const syncSelectedProfileName = () => {
 			const presetId = Number(presetField.value);
 			if (presetId < 1 || presetId > 7) {
 				return;
@@ -1401,9 +1305,9 @@
 					hiddenField.dispatchEvent(new Event('input', {bubbles: true}));
 					hiddenField.dispatchEvent(new Event('change', {bubbles: true}));
 				}
-				updatePresetOptionLabel(presetId, nameValue);
-				refreshPresetSelectUi();
-		};
+					updatePresetOptionLabel(presetId, nameValue);
+					refreshPresetSelectUi({emitChange: false});
+			};
 		const saveProfileToFile = (presetId) => {
 			const nameField = getProfileNameField(presetId);
 			const body = new URLSearchParams();
@@ -1834,11 +1738,11 @@
 			row.appendChild(marker);
 		};
 
-		const addSaveButton = () => {
-			const row = presetField.closest('.form-field');
-			if (!row || row.querySelector('.switch-profile-save') !== null) {
-				return;
-			}
+			const addSaveButton = () => {
+				const row = presetField.closest('.form-field');
+				if (!row || row.querySelector('.switch-profile-save') !== null) {
+					return;
+				}
 
 			const button = document.createElement('button');
 			button.type = 'button';
@@ -1846,29 +1750,32 @@
 			button.textContent = 'Save current to selected profile';
 			button.style.marginLeft = '8px';
 
-			const runSave = () => {
-				const presetId = Number(presetField.value);
-				if (presetId < 1 || presetId > 7 || Number.isNaN(presetId)) {
-					window.alert('Select a profile (1-7) first.');
-					return false;
-				}
+				const runSave = () => {
+					if (button.dataset.saving === '1') {
+						return false;
+					}
 
-				setSimpleFieldValue(`profile${presetId}_row_count`, readIntField('row_count', '2'));
-				setSimpleFieldValue(`profile${presetId}_ports_per_row`, readIntField('ports_per_row', '12'));
-				setSimpleFieldValue(`profile${presetId}_sfp_ports`, readIntField('sfp_ports', '0'));
-				setSimpleFieldValue(`profile${presetId}_switch_size`, readIntField('switch_size', '100'));
-				setSimpleFieldValue(`profile${presetId}_switch_brand`, (findField('switch_brand')?.value || 'NETSWITCH').toString());
-				setSimpleFieldValue(`profile${presetId}_switch_model`, (findField('switch_model')?.value || 'SW-24G').toString());
-				syncSelectedProfileName();
-				persistProfiles();
-				refreshNameEditor();
-				applyPreset();
+					const presetId = Number(presetField.value);
+					if (presetId < 1 || presetId > 7 || Number.isNaN(presetId)) {
+						window.alert('Select a profile (1-7) first.');
+						return false;
+					}
 
-				button.disabled = true;
-				const originalText = button.textContent;
-				button.textContent = 'Saving...';
-				setSaveStatus('Saving profile...', '#4A5568');
-				showSaveToast('Saving profile...', true);
+					setSimpleFieldValue(`profile${presetId}_row_count`, readIntField('row_count', '2'), {dispatchEvents: false});
+					setSimpleFieldValue(`profile${presetId}_ports_per_row`, readIntField('ports_per_row', '12'), {dispatchEvents: false});
+					setSimpleFieldValue(`profile${presetId}_sfp_ports`, readIntField('sfp_ports', '0'), {dispatchEvents: false});
+					setSimpleFieldValue(`profile${presetId}_switch_size`, readIntField('switch_size', '100'), {dispatchEvents: false});
+					setSimpleFieldValue(`profile${presetId}_switch_brand`, (findField('switch_brand')?.value || 'NETSWITCH').toString(), {dispatchEvents: false});
+					setSimpleFieldValue(`profile${presetId}_switch_model`, (findField('switch_model')?.value || 'SW-24G').toString(), {dispatchEvents: false});
+					syncSelectedProfileName();
+					refreshNameEditor();
+
+					button.dataset.saving = '1';
+					button.disabled = true;
+					const originalText = button.textContent;
+					button.textContent = 'Saving...';
+					setSaveStatus('Saving profile...', '#4A5568');
+					showSaveToast('Saving profile...', true);
 
 				let saveOk = false;
 				let saveError = '';
@@ -1879,22 +1786,23 @@
 						const currentName = String(document.querySelector('.switch-profile-name')?.value || '').trim();
 						const expectedLabel = normalizeProfileName(currentName, presetId);
 						const hiddenField = getProfileNameField(presetId);
-						if (hiddenField) {
-							hiddenField.value = expectedLabel;
-						}
-						updatePresetOptionLabel(presetId, currentName);
-						refreshPresetSelectUi();
-						saveOk = true;
+							if (hiddenField) {
+								hiddenField.value = expectedLabel;
+							}
+							updatePresetOptionLabel(presetId, currentName);
+							refreshPresetSelectUi({emitChange: false});
+							saveOk = true;
 					}
 					else {
 						saveError = payload.error || 'Profile save failed.';
 					}
 				}).catch(() => {
 					saveError = 'Profile save failed.';
-				}).finally(() => {
-					button.disabled = false;
-					if (saveOk) {
-						button.textContent = 'Saved';
+					}).finally(() => {
+						button.dataset.saving = '0';
+						button.disabled = false;
+						if (saveOk) {
+							button.textContent = 'Saved';
 						setSaveStatus('Profile saved', '#2F855A');
 						showSaveToast('Profile saved', true);
 						window.setTimeout(() => {
@@ -1911,15 +1819,13 @@
 					}
 				});
 
-				return false;
-			};
+					return false;
+				};
 
-			window.switch_widget_save_selected_profile = runSave;
-			button.setAttribute('onclick', 'return window.switch_widget_save_selected_profile ? window.switch_widget_save_selected_profile() : false;');
-			button.addEventListener('click', (event) => {
-				event.preventDefault();
-				runSave();
-			});
+				button.addEventListener('click', (event) => {
+					event.preventDefault();
+					runSave();
+				});
 
 			row.appendChild(button);
 		};
@@ -1947,10 +1853,9 @@
 			presetField.dataset.switchPresetInit = '1';
 			ensureBuildMarker();
 			addSaveButton();
-		hideInternalProfileFields();
-		applyStoredProfiles();
-		applyPreset();
-		refreshNameEditor();
+			hideInternalProfileFields();
+			applyPreset();
+			refreshNameEditor();
 
 		window.switch_widget_apply_preset_if_changed = () => {
 			const current = String(presetField.value || '0');
@@ -2189,21 +2094,26 @@
 
 	window.switch_widget_form = {
 		init() {
-			const stopExisting = () => {
-				if (window.switch_widget_form._refreshTimer) {
-					clearInterval(window.switch_widget_form._refreshTimer);
-					window.switch_widget_form._refreshTimer = null;
-				}
+				const stopExisting = () => {
+					if (window.switch_widget_form._refreshTimer) {
+						clearInterval(window.switch_widget_form._refreshTimer);
+						window.switch_widget_form._refreshTimer = null;
+					}
 				if (window.switch_widget_form._refreshObserver) {
 					window.switch_widget_form._refreshObserver.disconnect();
 					window.switch_widget_form._refreshObserver = null;
 				}
-				if (window.switch_widget_form._onVisibilityChange) {
-					document.removeEventListener('visibilitychange', window.switch_widget_form._onVisibilityChange);
-					window.switch_widget_form._onVisibilityChange = null;
-				}
-			};
-			stopExisting();
+					if (window.switch_widget_form._onVisibilityChange) {
+						document.removeEventListener('visibilitychange', window.switch_widget_form._onVisibilityChange);
+						window.switch_widget_form._onVisibilityChange = null;
+					}
+					if (window.switch_widget_form._onPickerOutsideClick) {
+						document.removeEventListener('click', window.switch_widget_form._onPickerOutsideClick);
+						window.switch_widget_form._onPickerOutsideClick = null;
+					}
+				};
+				stopExisting();
+				ensureGlobalPickerOutsideClick();
 
 			let previousHostId = null;
 			let inFlight = false;
@@ -2229,19 +2139,17 @@
 					ensurePortFieldRowsAligned();
 					updatePortFieldsetVisibility();
 
-					for (const field of getColorFields()) {
-						ensureColorPickerForField(field);
-					}
-					ensureUtilizationControls();
-					ensureBulkControls();
+						for (const field of getColorFields()) {
+							ensureColorPickerForField(field);
+						}
+						ensureEditSections();
+						ensureUtilizationControls();
+						ensureBulkControls();
 
 					uiBootstrapped = true;
 					lastLayoutKey = layoutKey;
 				}
-				ensureEditSections();
-				ensureUtilizationControls();
-
-				const hostid = getHostId();
+					const hostid = getHostId();
 				if (hostid === previousHostId || inFlight) {
 					return;
 				}
