@@ -108,6 +108,13 @@
 		return fallback;
 	}
 
+	function logDebug(context, error) {
+		if (window.SWITCH_WIDGET_DEBUG) {
+			// eslint-disable-next-line no-console
+			console.warn(`[switch-widget] ${context}`, error);
+		}
+	}
+
 	function getColorFields() {
 		const fields = [];
 		const seen = new Set();
@@ -238,8 +245,14 @@
 				'Errors out item pattern',
 				'Discards in item pattern',
 				'Discards out item pattern',
-				'Speed item pattern'
-			], 30, 30);
+				'Speed item pattern',
+				'Software item key',
+				'VLANs item key',
+				'CPU item key',
+				'Fan item key',
+				'Uptime item key',
+				'Serial item key'
+			], 40, 40);
 			enforceTextFieldsByLabels(['Brand', 'Model'], 30, 30);
 			enforceTextFieldsByLabels(['Size (%)', 'Rows', 'Ports per row', 'SFP ports'], 6, 4, {numericOnly: true});
 			ensureCompactMainLayout();
@@ -359,7 +372,6 @@
 		});
 
 		field.dataset.port24ModernColorInit = '1';
-		field.dataset.port24ColorInit = '1';
 	}
 
 	function ensureColorPickerForField(field) {
@@ -369,13 +381,6 @@
 	function setFieldColor(field, color, dispatchEvents = true) {
 		const normalized = normalizeHexColor(color, getColorFallback(field));
 		field.value = normalized;
-
-		const picker = field.parentElement
-			? field.parentElement.querySelector('input[type="color"]')
-			: null;
-		if (picker) {
-			picker.value = normalized;
-		}
 		if (field._port24ModernPicker && typeof field._port24ModernPicker.setValue === 'function') {
 			field._port24ModernPicker.setValue(normalized, false);
 		}
@@ -501,8 +506,9 @@
 
 		insertSection('traffic', 'Traffic Patterns', 'Traffic in item pattern');
 		insertSection('errors', 'Error and Discard Patterns', 'Errors in item pattern');
+		insertSection('summary', 'Switch Summary Item Keys', 'Software item key');
 		insertSection('util', 'Utilization Settings', 'Show utilization overlay');
-		insertSection('layout', 'Device Layout', 'Brand');
+		insertSection('layout', 'Device Layout', 'Model');
 	}
 
 	function createModernBulkPicker(initialColor) {
@@ -1370,14 +1376,14 @@
 								return parsed;
 							}
 						}
-						catch (error) {}
+						catch (error) { logDebug("silent catch", error); }
 						try {
 							const parsed = parsePayload(normalizedText);
 							if (parsed !== null) {
 								return parsed;
 							}
 						}
-						catch (error) {}
+						catch (error) { logDebug("silent catch", error); }
 
 					const extractEmbeddedJson = (raw, marker) => {
 						const start = raw.indexOf(marker);
@@ -1428,7 +1434,7 @@
 								return parsed;
 							}
 						}
-						catch (error) {}
+						catch (error) { logDebug("silent catch", error); }
 					}
 
 						const start = text.indexOf('{"saved"');
@@ -1470,7 +1476,7 @@
 								}
 							}
 						}
-							catch (error) {}
+							catch (error) { logDebug("silent catch", error); }
 						}
 						const embeddedMainNormalized = extractEmbeddedJson(normalizedText, '{"main_block"');
 						if (embeddedMainNormalized !== null) {
@@ -1480,7 +1486,7 @@
 									return parsed;
 								}
 							}
-							catch (error) {}
+							catch (error) { logDebug("silent catch", error); }
 						}
 
 						if (
@@ -1506,8 +1512,12 @@
 								return {saved: false, error: 'Access denied while saving profile.'};
 							}
 
-							// Optimistic fallback: some Zabbix setups wrap successful AJAX responses.
-							return {saved: true, error: ''};
+							return {
+								saved: false,
+								error: (ok && status >= 200 && status < 300)
+									? 'Unexpected save response format.'
+									: 'Profile save failed.'
+							};
 						});
 			};
 
@@ -1790,9 +1800,8 @@
 								hiddenField.value = expectedLabel;
 							}
 							updatePresetOptionLabel(presetId, currentName);
-							refreshPresetSelectUi({emitChange: false});
 							saveOk = true;
-					}
+						}
 					else {
 						saveError = payload.error || 'Profile save failed.';
 					}
@@ -2074,7 +2083,7 @@
 						return parsed;
 					}
 				}
-				catch (error) {}
+				catch (error) { logDebug("silent catch", error); }
 
 				// Some Zabbix setups wrap AJAX response in full HTML layout.
 				const embeddedJson = extractEmbeddedJson(text);
@@ -2085,7 +2094,7 @@
 							return parsed;
 						}
 					}
-					catch (error) {}
+					catch (error) { logDebug("silent catch", error); }
 				}
 
 				return {triggers: []};

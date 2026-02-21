@@ -18,7 +18,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 	private const DEFAULT_OUT_DISCARDS_PATTERN = 'ifOutDiscards[*]';
 	private const TRAFFIC_UNIT_BYTES = 0;
 	private const TRAFFIC_UNIT_BITS = 1;
-	private const MAX_SPEED_PATTERN_LENGTH = 30;
+	private const MAX_SPEED_PATTERN_LENGTH = 40;
 	private const TRAFFIC_POINTS = 24;
 	private const TRAFFIC_LOOKBACK_SECONDS = 1800;
 	private const COUNTER_LOOKBACK_SECONDS = 86400;
@@ -42,6 +42,12 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$out_errors_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['out_errors_item_pattern'] ?? self::DEFAULT_OUT_ERRORS_PATTERN), self::DEFAULT_OUT_ERRORS_PATTERN);
 		$in_discards_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['in_discards_item_pattern'] ?? self::DEFAULT_IN_DISCARDS_PATTERN), self::DEFAULT_IN_DISCARDS_PATTERN);
 		$out_discards_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['out_discards_item_pattern'] ?? self::DEFAULT_OUT_DISCARDS_PATTERN), self::DEFAULT_OUT_DISCARDS_PATTERN);
+		$summary_software_item_key = $this->sanitizeItemPattern((string) ($this->fields_values['summary_software_item_key'] ?? ''), '');
+		$summary_vlans_item_key = $this->sanitizeItemPattern((string) ($this->fields_values['summary_vlans_item_key'] ?? ''), '');
+		$summary_cpu_item_key = $this->sanitizeItemPattern((string) ($this->fields_values['summary_cpu_item_key'] ?? ''), '');
+		$summary_fan_item_key = $this->sanitizeItemPattern((string) ($this->fields_values['summary_fan_item_key'] ?? ''), '');
+		$summary_uptime_item_key = $this->sanitizeItemPattern((string) ($this->fields_values['summary_uptime_item_key'] ?? ''), '');
+		$summary_serial_item_key = $this->sanitizeItemPattern((string) ($this->fields_values['summary_serial_item_key'] ?? ''), '');
 		$speed_pattern = substr($speed_pattern, 0, self::MAX_SPEED_PATTERN_LENGTH);
 		$speed_pattern_alt = $this->getAlternateSpeedPattern($speed_pattern);
 		$utilization_overlay_enabled = ((int) ($this->fields_values['utilization_overlay_enabled'] ?? 1)) === 1 ? 1 : 0;
@@ -68,6 +74,19 @@ class WidgetView extends CControllerDashboardWidgetView {
 			);
 		}
 		$ports = $this->loadPortsFromFields($layout['total_ports']);
+		$host_meta = $this->loadHostMeta($hostid);
+		$summary_item_keys = [
+			'software' => $summary_software_item_key,
+			'vlans' => $summary_vlans_item_key,
+			'cpu' => $summary_cpu_item_key,
+			'fan' => $summary_fan_item_key,
+			'uptime' => $summary_uptime_item_key,
+			'serial' => $summary_serial_item_key
+		];
+		$summary_items = $this->loadSummaryItems($hostid, $summary_item_keys);
+		$switch_summary = $this->buildSwitchSummary($host_meta, $layout, $ports, $summary_item_keys, $summary_items);
+		$switch_brand = $this->resolveSwitchBrand($host_meta);
+		$switch_model = trim((string) ($this->fields_values['switch_model'] ?? 'SW-24G'));
 		$trigger_meta = $this->loadTriggerMeta($ports);
 		$widget_name = trim((string) $this->getInput('name', ''));
 		if ($widget_name === '') {
@@ -92,6 +111,12 @@ class WidgetView extends CControllerDashboardWidgetView {
 					'out_errors_item_pattern' => $out_errors_pattern,
 					'in_discards_item_pattern' => $in_discards_pattern,
 					'out_discards_item_pattern' => $out_discards_pattern,
+					'summary_software_item_key' => $summary_software_item_key,
+					'summary_vlans_item_key' => $summary_vlans_item_key,
+					'summary_cpu_item_key' => $summary_cpu_item_key,
+					'summary_fan_item_key' => $summary_fan_item_key,
+					'summary_uptime_item_key' => $summary_uptime_item_key,
+					'summary_serial_item_key' => $summary_serial_item_key,
 					'speed_item_pattern' => $speed_pattern,
 				'utilization_overlay_enabled' => $utilization_overlay_enabled,
 				'utilization_low_threshold' => $util_low_threshold,
@@ -107,8 +132,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 					12,
 					18
 				),
-				'switch_brand' => trim((string) ($this->fields_values['switch_brand'] ?? 'NETSWITCH')),
-				'switch_model' => trim((string) ($this->fields_values['switch_model'] ?? 'SW-24G')),
+				'switch_brand' => $switch_brand,
+				'switch_model' => $switch_model,
 				'switch_size' => $this->clamp(
 					$this->extractPositiveInt($this->fields_values['switch_size'] ?? 100),
 					40,
@@ -117,6 +142,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'row_count' => $layout['row_count'],
 				'ports_per_row' => $layout['ports_per_row'],
 				'sfp_ports' => $layout['sfp_ports'],
+				'switch_summary' => $switch_summary,
 				'ports' => [],
 				'user' => [
 					'debug_mode' => $this->getDebugMode()
@@ -264,6 +290,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$port['discards_24h_buckets'] = $discards_24h_buckets;
 		}
 		unset($port);
+		$switch_summary = $this->buildSwitchSummary($host_meta, $layout, $ports, $summary_item_keys, $summary_items);
 
 		$this->setResponse(new CControllerResponseData([
 				'name' => $widget_name,
@@ -276,6 +303,12 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'out_errors_item_pattern' => $out_errors_pattern,
 				'in_discards_item_pattern' => $in_discards_pattern,
 				'out_discards_item_pattern' => $out_discards_pattern,
+				'summary_software_item_key' => $summary_software_item_key,
+				'summary_vlans_item_key' => $summary_vlans_item_key,
+				'summary_cpu_item_key' => $summary_cpu_item_key,
+				'summary_fan_item_key' => $summary_fan_item_key,
+				'summary_uptime_item_key' => $summary_uptime_item_key,
+				'summary_serial_item_key' => $summary_serial_item_key,
 				'speed_item_pattern' => $speed_pattern,
 				'utilization_overlay_enabled' => $utilization_overlay_enabled,
 				'utilization_low_threshold' => $util_low_threshold,
@@ -291,8 +324,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 					12,
 					18
 				),
-				'switch_brand' => trim((string) ($this->fields_values['switch_brand'] ?? 'NETSWITCH')),
-				'switch_model' => trim((string) ($this->fields_values['switch_model'] ?? 'SW-24G')),
+				'switch_brand' => $switch_brand,
+				'switch_model' => $switch_model,
 				'switch_size' => $this->clamp(
 					$this->extractPositiveInt($this->fields_values['switch_size'] ?? 100),
 					40,
@@ -301,6 +334,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'row_count' => $layout['row_count'],
 				'ports_per_row' => $layout['ports_per_row'],
 				'sfp_ports' => $layout['sfp_ports'],
+				'switch_summary' => $switch_summary,
 				'ports' => $ports,
 				'user' => [
 					'debug_mode' => $this->getDebugMode()
@@ -320,6 +354,117 @@ class WidgetView extends CControllerDashboardWidgetView {
 		]);
 
 		return is_array($rows) && $rows !== [];
+	}
+
+	private function loadHostMeta(string $hostid): array {
+		if ($hostid === '') {
+			return [];
+		}
+
+		$rows = API::Host()->get([
+			'output' => ['hostid', 'host', 'name', 'status'],
+			'hostids' => [$hostid],
+			'selectInventory' => ['os', 'software', 'hardware'],
+			'limit' => 1
+		]);
+
+		if (!is_array($rows) || $rows === []) {
+			return [];
+		}
+
+		$row = $rows[0];
+		$inventory = is_array($row['inventory'] ?? null) ? $row['inventory'] : [];
+		$name = trim((string) ($row['name'] ?? ''));
+		$technical_name = trim((string) ($row['host'] ?? ''));
+		$display_name = $name !== '' ? $name : $technical_name;
+
+		return [
+			'display_name' => $display_name,
+			'name' => $name,
+			'host' => $technical_name,
+			'status' => (int) ($row['status'] ?? 1),
+			'os' => trim((string) ($inventory['os'] ?? '')),
+			'software' => trim((string) ($inventory['software'] ?? '')),
+			'hardware' => trim((string) ($inventory['hardware'] ?? ''))
+		];
+	}
+
+	private function buildSwitchSummary(
+		array $host_meta,
+		array $layout,
+		array $ports,
+		array $summary_item_keys = [],
+		array $summary_items = []
+	): array {
+		$trigger_configured = 0;
+		$problem_ports = 0;
+		$ok_ports = 0;
+		$util_values = [];
+
+		foreach ($ports as $port) {
+			if (!empty($port['has_trigger'])) {
+				$trigger_configured++;
+				if (!empty($port['is_problem'])) {
+					$problem_ports++;
+				}
+				else {
+					$ok_ports++;
+				}
+			}
+
+			if (isset($port['utilization_percent']) && $port['utilization_percent'] !== null) {
+				$util_values[] = (float) $port['utilization_percent'];
+			}
+		}
+
+		$avg_util = null;
+		$peak_util = null;
+		if ($util_values !== []) {
+			$avg_util = array_sum($util_values) / count($util_values);
+			$peak_util = max($util_values);
+		}
+
+		$total_ports = (int) ($layout['total_ports'] ?? count($ports));
+		$sfp_ports = (int) ($layout['sfp_ports'] ?? 0);
+		$utp_ports = max(0, $total_ports - $sfp_ports);
+		$no_trigger_ports = max(0, count($ports) - $trigger_configured);
+		$software = $this->firstSummaryValue($summary_items['software'] ?? [], (string) ($host_meta['software'] ?? ''));
+		$vlans = $this->firstSummaryValue($summary_items['vlans'] ?? [], '');
+		$cpu = $this->formatCpuSummary($summary_items['cpu'] ?? []);
+		$fan = $this->formatListSummary($summary_items['fan'] ?? []);
+		$uptime_raw = $this->firstSummaryValue($summary_items['uptime'] ?? [], '');
+		$uptime = $this->formatUptime($uptime_raw);
+		$serial = $this->firstSummaryValue($summary_items['serial'] ?? [], '');
+
+		return [
+			'monitoring_enabled' => ((int) ($host_meta['status'] ?? 1) === 0),
+			'software' => $software,
+			'os' => (string) ($host_meta['os'] ?? ''),
+			'hardware' => (string) ($host_meta['hardware'] ?? ''),
+			'vlans' => $vlans,
+			'cpu' => $cpu,
+			'fan' => $fan,
+			'uptime' => $uptime,
+			'serial' => $serial,
+			'total_ports' => $total_ports,
+			'utp_ports' => $utp_ports,
+			'sfp_ports' => $sfp_ports,
+			'trigger_configured' => $trigger_configured,
+			'ok_ports' => $ok_ports,
+			'problem_ports' => $problem_ports,
+			'no_trigger_ports' => $no_trigger_ports,
+			'ports_with_utilization' => count($util_values),
+			'avg_utilization' => $avg_util,
+			'peak_utilization' => $peak_util
+		];
+	}
+
+	private function resolveSwitchBrand(array $host_meta): string {
+		$name = trim((string) ($host_meta['name'] ?? ''));
+		$host = trim((string) ($host_meta['host'] ?? ''));
+		$display = trim((string) ($host_meta['display_name'] ?? ''));
+		$resolved = $name !== '' ? $name : ($display !== '' ? $display : $host);
+		return $resolved !== '' ? $resolved : 'NETSWITCH';
 	}
 
 	private function loadPortsFromFields(int $total_ports): array {
@@ -588,6 +733,190 @@ class WidgetView extends CControllerDashboardWidgetView {
 		}
 
 		return $result;
+	}
+
+	private function loadSummaryItems(string $hostid, array $patterns): array {
+		$result = [
+			'software' => [],
+			'vlans' => [],
+			'cpu' => [],
+			'fan' => [],
+			'uptime' => [],
+			'serial' => []
+		];
+
+		if ($hostid === '') {
+			return $result;
+		}
+		$sort_up = defined('ZBX_SORT_UP') ? ZBX_SORT_UP : 'ASC';
+
+		foreach ($patterns as $metric => $pattern_raw) {
+			$pattern = trim((string) $pattern_raw);
+			if ($pattern === '' || !array_key_exists($metric, $result)) {
+				continue;
+			}
+			$pattern = $this->normalizeDotIndexPattern($pattern);
+
+			try {
+				if (strpos($pattern, '*') !== false) {
+					try {
+						$rows = API::Item()->get([
+							'output' => ['key_', 'lastvalue'],
+							'hostids' => [$hostid],
+							'search' => ['key_' => $pattern],
+							'searchWildcardsEnabled' => true,
+							'sortfield' => 'key_',
+							'sortorder' => $sort_up
+						]);
+					}
+					catch (\Throwable $e) {
+						$rows = API::Item()->get([
+							'output' => ['key_', 'lastvalue'],
+							'hostids' => [$hostid],
+							'search' => ['key_' => $pattern],
+							'sortfield' => 'key_',
+							'sortorder' => $sort_up
+						]);
+					}
+				}
+				else {
+					$rows = API::Item()->get([
+						'output' => ['key_', 'lastvalue'],
+						'hostids' => [$hostid],
+						'filter' => ['key_' => [$pattern]],
+						'limit' => 1
+					]);
+				}
+			}
+			catch (\Throwable $e) {
+				continue;
+			}
+
+			if (!is_array($rows) || $rows === []) {
+				continue;
+			}
+
+			foreach ($rows as $row) {
+				$key = trim((string) ($row['key_'] ?? ''));
+				if ($key === '') {
+					continue;
+				}
+				$result[$metric][] = [
+					'key' => $key,
+					'value' => trim((string) ($row['lastvalue'] ?? ''))
+				];
+			}
+		}
+
+		return $result;
+	}
+
+	private function normalizeDotIndexPattern(string $pattern): string {
+		$pattern = trim($pattern);
+		if (preg_match('/^([a-zA-Z0-9_.-]+)\.(\*|\d+)$/', $pattern, $m) === 1) {
+			return $m[1].'['.$m[2].']';
+		}
+
+		return $pattern;
+	}
+
+	private function firstSummaryValue(array $items, string $fallback = ''): string {
+		foreach ($items as $item) {
+			$value = trim((string) ($item['value'] ?? ''));
+			if ($value !== '') {
+				return $value;
+			}
+		}
+
+		return trim($fallback);
+	}
+
+	private function formatListSummary(array $items, int $limit = 4): string {
+		$values = [];
+		foreach ($items as $item) {
+			$value = trim((string) ($item['value'] ?? ''));
+			if ($value !== '') {
+				$values[] = $value;
+			}
+		}
+		if ($values === []) {
+			return '';
+		}
+		if (count($values) <= $limit) {
+			return implode(', ', $values);
+		}
+
+		$rest = count($values) - $limit;
+		return implode(', ', array_slice($values, 0, $limit)).', +'.$rest;
+	}
+
+	private function formatCpuSummary(array $items): string {
+		if ($items === []) {
+			return '';
+		}
+
+		$parts = [];
+		$numeric = [];
+		foreach ($items as $item) {
+			$key = (string) ($item['key'] ?? '');
+			$value = trim((string) ($item['value'] ?? ''));
+			if ($value === '') {
+				continue;
+			}
+
+			$label = 'CPU';
+			if (preg_match('/\[(\d+)\]/', $key, $m) === 1) {
+				$label = 'CPU'.$m[1];
+			}
+			elseif (preg_match('/\.(\d+)$/', $key, $m) === 1) {
+				$label = 'CPU'.$m[1];
+			}
+
+			$display = $value;
+			if (is_numeric($value)) {
+				$n = (float) $value;
+				$numeric[] = $n;
+				$display = rtrim(rtrim(number_format($n, 1, '.', ''), '0'), '.').'%';
+			}
+			$parts[] = $label.' '.$display;
+		}
+
+		if ($parts === []) {
+			return '';
+		}
+
+		$list = count($parts) > 3
+			? implode(', ', array_slice($parts, 0, 3)).', +'.(count($parts) - 3)
+			: implode(', ', $parts);
+
+		if ($numeric !== []) {
+			$avg = array_sum($numeric) / count($numeric);
+			$avg_text = rtrim(rtrim(number_format($avg, 1, '.', ''), '0'), '.').'%';
+			return 'avg '.$avg_text.' ('.$list.')';
+		}
+
+		return $list;
+	}
+
+	private function formatUptime(string $value): string {
+		$text = trim($value);
+		if ($text === '' || !is_numeric($text)) {
+			return $text;
+		}
+
+		$timeticks = (float) $text;
+		if ($timeticks < 0) {
+			return $text;
+		}
+
+		$seconds = (int) floor($timeticks / 100);
+		$days = intdiv($seconds, 86400);
+		$rem = $seconds % 86400;
+		$hours = intdiv($rem, 3600);
+		$minutes = intdiv($rem % 3600, 60);
+		$secs = $rem % 60;
+
+		return sprintf('%d days, %02d:%02d:%02d', $days, $hours, $minutes, $secs);
 	}
 
 	private function loadCounterDeltas24h(string $hostid, array $keys): array {

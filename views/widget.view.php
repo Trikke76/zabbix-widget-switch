@@ -56,26 +56,40 @@ $css = implode('', [
 	'.port24-tip-state-seg{display:block;border-radius:1px;background:#64748B;}',
 	'.port24-tip-state-seg.ok{background:#22C55E;}',
 	'.port24-tip-state-seg.problem{background:#EF4444;}',
-	'.port24-tip-counter-row{margin:6px 0 4px 0;}',
-	'.port24-tip-counter-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}',
-	'.port24-tip-counter-grid{display:grid;grid-template-columns:repeat(48,1fr);gap:1px;height:8px;background:#1b2430;padding:1px;border-radius:2px;}',
-	'.port24-tip-counter-seg{display:block;border-radius:1px;background:#334155;}',
-	'.port24-tip-counter-seg.low{background:#38BDF8;}',
-	'.port24-tip-counter-seg.warn{background:#F59E0B;}',
-	'.port24-tip-counter-seg.high{background:#EF4444;}',
-		'.port24-tip-svg{display:block;width:120px;height:26px;background:#0a1119;border:1px solid #223041;border-radius:4px;overflow:hidden;}',
+		'.port24-tip-svg{display:block;width:150px;height:36px;background:linear-gradient(180deg,rgba(90,101,113,.22) 0%,rgba(43,50,59,.34) 100%);border:1px solid rgba(168,184,202,.30);border-radius:4px;overflow:hidden;}',
 		'.port24-tip-area-in{fill:rgba(56,189,248,0.35);}',
 		'.port24-tip-area-out{fill:rgba(245,158,11,0.30);}',
 		'.port24-tip-path-in{fill:none;stroke:#4fb9ff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}',
 		'.port24-tip-path-out{fill:none;stroke:#ffb020;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}',
 		'.port24-tip-dot{fill:#334155;stroke:#dbeafe;stroke-width:1.1;}',
-	'.port24-card-wrap:hover .port24-hover-tip{display:block;}',
-	'.port24-hover-tip{position:absolute;z-index:40;left:calc(14px * var(--port24-scale));top:calc(42px * var(--port24-scale));min-width:200px;max-width:300px;background:#0f1722;color:#d9e3ee;border:1px solid #2e3c4d;border-radius:8px;padding:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);font-size:11px;line-height:1.3;display:none;pointer-events:none;flex-direction:column;}',
 	'.port24-util-grid-wrap{margin-top:10px;}',
 	'.port24-util-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:4px;}',
 	'.port24-util-cell{border:1px solid rgba(15,23,34,.28);border-radius:3px;padding:4px 3px;text-align:center;font-size:10px;line-height:1.2;color:#0f1722;}',
 	'.port24-util-cell-port{display:block;font-weight:700;opacity:.8;margin-bottom:2px;}',
 	'.port24-util-cell-val{display:block;font-weight:700;}',
+	'.port24-summary{margin-top:8px;padding:6px 0 0 0;border:0;border-radius:0;background:transparent;box-shadow:none;color:#d5deea;}',
+	'.port24-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:6px 10px;}',
+	'.port24-summary-item{display:flex;align-items:center;gap:6px;min-width:0;}',
+	'.port24-summary-k{font-weight:700;color:#c8d4e3;white-space:nowrap;}',
+	'.port24-summary-v{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f4f7fb;}',
+	'.port24-summary-live{margin-top:8px;padding-top:7px;border-top:1px solid rgba(203,213,225,.25);max-width:740px;}',
+	'.port24-summary-live-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;max-width:620px;}',
+	'.port24-summary-live-title{font-weight:700;color:#e5edf7;}',
+	'.port24-summary-live-sub{font-size:11px;color:#b8c7da;}',
+	'.port24-summary-live-body{display:grid;grid-template-columns:minmax(220px,300px) minmax(220px,300px);gap:12px;align-items:start;max-width:620px;}',
+	'@media (max-width:860px){.port24-summary-live-body{grid-template-columns:1fr;}}',
+	'.port24-summary-live-row{display:grid;grid-template-columns:40px 150px 72px;align-items:center;justify-content:start;gap:8px;margin:4px 0;max-width:330px;}',
+	'.port24-summary-live-spark{display:block;width:150px;height:36px;background:linear-gradient(180deg,rgba(90,101,113,.22) 0%,rgba(43,50,59,.34) 100%);border:1px solid rgba(168,184,202,.30);border-radius:4px;overflow:hidden;}',
+	'.port24-summary-live-value{min-width:52px;text-align:right;font-variant-numeric:tabular-nums;color:#e5edf7;}',
+	'.port24-summary-live-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0;max-width:300px;}',
+	'.port24-summary-live-meta .port24-summary-k{white-space:nowrap;}',
+	'.port24-status-value{display:inline-flex;align-items:center;gap:6px;}',
+	'.port24-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;}',
+	'.port24-status-dot.ok{background:#22C55E;box-shadow:0 0 0 1px rgba(255,255,255,.25),0 0 8px rgba(34,197,94,.55);}',
+	'.port24-status-dot.problem{background:#EF4444;box-shadow:0 0 0 1px rgba(255,255,255,.25),0 0 8px rgba(239,68,68,.55);}',
+	'.port24-summary-live-state{max-width:300px;}',
+	'.port24-summary-bars .port24-tip-state-row{margin:0 0 8px 0;}',
+	'.port24-summary-bars .port24-tip-state-row:last-child{margin-bottom:0;}',
 	'.port24-denied{display:inline-block;padding:10px 12px;border:1px solid #e7b7b7;border-radius:6px;background:#fff5f5;color:#9b2c2c;font-size:13px;}'
 ]);
 
@@ -113,7 +127,10 @@ $util_na_color = (string) ($data['utilization_na_color'] ?? '#94A3B8');
 $util_low_threshold = (float) ($data['utilization_low_threshold'] ?? 5);
 $util_warn_threshold = (float) ($data['utilization_warn_threshold'] ?? 40);
 $util_high_threshold = (float) ($data['utilization_high_threshold'] ?? 70);
-$switch = (new CDiv())->addClass('port24-switch')->setAttribute('style', '--port24-scale: '.$scale.';');
+$widget_uid = 'port24_'.str_replace('.', '_', uniqid('', true));
+$switch = (new CDiv())->addClass('port24-switch')
+	->setAttribute('id', $widget_uid)
+	->setAttribute('style', '--port24-scale: '.$scale.';');
 $head = (new CDiv())->addClass('port24-head');
 $head
 	->addItem((new CDiv($data['switch_brand'] !== '' ? $data['switch_brand'] : 'NETSWITCH'))->addClass('port24-brand'))
@@ -145,8 +162,33 @@ $util_color_for = static function(?float $util) use ($util_low_threshold, $util_
 	}
 	return '#BBF7D0';
 };
+$live_select_js = 'var r=this.closest(".port24-switch");if(!r)return;'
+	.'var t=r.querySelector(".port24-summary-live-title"),is=r.querySelector("[data-live-spark=\"in\"]"),os=r.querySelector("[data-live-spark=\"out\"]"),iv=r.querySelector("[data-live-value=\"in\"]"),ov=r.querySelector("[data-live-value=\"out\"]"),uv=r.querySelector("[data-live-util=\"1\"]"),ev=r.querySelector("[data-live-errors=\"1\"]"),dv=r.querySelector("[data-live-discards=\"1\"]");'
+	.'var sg=r.querySelector("[data-live-state-grid=\"1\"]"),eg=r.querySelector("[data-live-errors-grid=\"1\"]"),dg=r.querySelector("[data-live-discards-grid=\"1\"]");'
+	.'if(!t||!is||!os||!iv||!ov||!uv||!ev||!dv||!sg||!eg||!dg)return;'
+	.'var mk=function(k,l,a,x,y){var s=\'<svg viewBox="0 0 120 26" class="port24-tip-svg"><line x1="3" y1="13" x2="117" y2="13" stroke="rgba(148,163,184,0.25)" stroke-width="1"></line>\';'
+	.'if(a){s+=\'<path d="\'+a+\'" class="\'+(k==="in"?"port24-tip-area-in":"port24-tip-area-out")+\'"></path>\';}'
+	.'if(l){s+=\'<path d="\'+l+\'" class="\'+(k==="in"?"port24-tip-path-in":"port24-tip-path-out")+\'"></path>\';s+=\'<circle cx="\'+(x||0)+\'" cy="\'+(y||0)+\'" r="2.8" class="port24-tip-dot"></circle>\';}'
+	.'return s+"</svg>";};'
+	.'var sh=function(v){var a=(v||"").split(","),h=\'<div class="port24-tip-state-grid">\';'
+	.'if(!v||a.length===0){for(var j=0;j<48;j++){h+=\'<span class="port24-tip-state-seg"></span>\';}return h+"</div>";}'
+	.'for(var i=0;i<a.length;i++){var c="port24-tip-state-seg";if(a[i]==="1"){c+=" problem";}else if(a[i]==="0"){c+=" ok";}h+=\'<span class="\'+c+\'"></span>\';}'
+	.'return h+"</div>";};'
+	.'var shc=function(v,k){var a=(v||"").split(","),m=0,h=\'<div class="port24-tip-state-grid">\';for(var i=0;i<a.length;i++){var n=parseFloat(a[i]);if(!isNaN(n)&&n>m){m=n;}}'
+	.'if(!v||a.length===0){for(var j=0;j<48;j++){h+=\'<span class="port24-tip-state-seg"></span>\';}return h+"</div>";}'
+	.'for(var z=0;z<a.length;z++){var d=parseFloat(a[z]);var c="port24-tip-state-seg";if(!isNaN(d)&&d>0&&m>0){var p=d/m;if(k==="e"){if(p>0.66){c+=" problem";}else if(p>0.2){c+=" ok";}}else{if(p>0.66){c+=" ok";}else if(p>0.2){c+=" problem";}}}h+=\'<span class="\'+c+\'"></span>\';}'
+	.'return h+"</div>";};'
+	.'t.textContent=this.getAttribute("data-port-name")||"Port";'
+	.'is.innerHTML=mk("in",this.dataset.liveInLine||"",this.dataset.liveInArea||"",this.dataset.liveInLastX||"0",this.dataset.liveInLastY||"0");'
+	.'os.innerHTML=mk("out",this.dataset.liveOutLine||"",this.dataset.liveOutArea||"",this.dataset.liveOutLastX||"0",this.dataset.liveOutLastY||"0");'
+	.'iv.textContent=this.dataset.liveInValue||"n/a";ov.textContent=this.dataset.liveOutValue||"n/a";'
+	.'uv.textContent=this.dataset.liveUtil||"0.0%";'
+	.'ev.textContent=this.dataset.liveErrors||"n/a";dv.textContent=this.dataset.liveDiscards||"n/a";'
+	.'sg.innerHTML=sh(this.dataset.liveState||"");'
+	.'eg.innerHTML=shc(this.dataset.liveErrorsBars||"","e");'
+	.'dg.innerHTML=shc(this.dataset.liveDiscardsBars||"","d");';
 
-$make_card = static function(array $port) use ($show_utilization_overlay, $util_color_for, $traffic_unit_mode): CTag {
+$make_card = static function(array $port) use ($show_utilization_overlay, $util_color_for, $traffic_unit_mode, $live_select_js): CTag {
 	$active_color = (string) ($port['active_color'] ?? '');
 	if (preg_match('/^#[0-9A-Fa-f]{6}$/', $active_color) !== 1) {
 		$active_color = '#22C55E';
@@ -157,7 +199,7 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 	$util_color = isset($port['utilization_color']) && is_string($port['utilization_color'])
 		? (string) $port['utilization_color']
 		: $util_color_for($utilization);
-	$display_color = $show_utilization_overlay ? $util_color : $active_color;
+	$display_color = $active_color;
 
 	if (empty($port['has_trigger'])) {
 		$state = _('No trigger');
@@ -262,53 +304,24 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 		}
 		return _('n/a');
 	};
-	$classify_counter_buckets = static function(array $buckets): array {
-		if ($buckets === []) {
-			$buckets = array_fill(0, 48, 0.0);
-		}
-
-		$max_value = 0.0;
-		foreach ($buckets as $v) {
-			$max_value = max($max_value, (float) $v);
-		}
-
-		$classes = [];
-		foreach ($buckets as $v) {
-			$value = (float) $v;
-			if ($value <= 0.0 || $max_value <= 0.0) {
-				$classes[] = 'port24-tip-counter-seg';
-				continue;
-			}
-			$ratio = $value / $max_value;
-			if ($ratio >= 0.66) {
-				$classes[] = 'port24-tip-counter-seg high';
-			}
-			elseif ($ratio >= 0.33) {
-				$classes[] = 'port24-tip-counter-seg warn';
-			}
-			else {
-				$classes[] = 'port24-tip-counter-seg low';
-			}
-		}
-
-		return $classes;
-	};
 
 	$in_series = is_array($port['traffic_in_series'] ?? null) ? $port['traffic_in_series'] : [];
 	$out_series = is_array($port['traffic_out_series'] ?? null) ? $port['traffic_out_series'] : [];
 	$state_24h = is_array($port['state_24h'] ?? null) ? $port['state_24h'] : [];
-	$errors_24h_total = (float) ($port['errors_24h_total'] ?? 0.0);
-	$errors_24h_in = (float) ($port['errors_24h_in'] ?? 0.0);
-	$errors_24h_out = (float) ($port['errors_24h_out'] ?? 0.0);
-	$errors_24h_trend = (string) ($port['errors_24h_trend'] ?? 'n/a');
-	$discards_24h_total = (float) ($port['discards_24h_total'] ?? 0.0);
-	$discards_24h_in = (float) ($port['discards_24h_in'] ?? 0.0);
-	$discards_24h_out = (float) ($port['discards_24h_out'] ?? 0.0);
-	$discards_24h_trend = (string) ($port['discards_24h_trend'] ?? 'n/a');
-	$errors_24h_buckets = is_array($port['errors_24h_buckets'] ?? null) ? $port['errors_24h_buckets'] : [];
-	$discards_24h_buckets = is_array($port['discards_24h_buckets'] ?? null) ? $port['discards_24h_buckets'] : [];
-	$errors_bucket_classes = $classify_counter_buckets($errors_24h_buckets);
-	$discards_bucket_classes = $classify_counter_buckets($discards_24h_buckets);
+		$errors_24h_total = (float) ($port['errors_24h_total'] ?? 0.0);
+		$errors_24h_in = (float) ($port['errors_24h_in'] ?? 0.0);
+		$errors_24h_out = (float) ($port['errors_24h_out'] ?? 0.0);
+		$errors_24h_trend = (string) ($port['errors_24h_trend'] ?? 'n/a');
+		$errors_24h_buckets = is_array($port['errors_24h_buckets'] ?? null)
+			? $port['errors_24h_buckets']
+			: array_fill(0, 48, 0.0);
+		$discards_24h_total = (float) ($port['discards_24h_total'] ?? 0.0);
+		$discards_24h_in = (float) ($port['discards_24h_in'] ?? 0.0);
+		$discards_24h_out = (float) ($port['discards_24h_out'] ?? 0.0);
+		$discards_24h_trend = (string) ($port['discards_24h_trend'] ?? 'n/a');
+		$discards_24h_buckets = is_array($port['discards_24h_buckets'] ?? null)
+			? $port['discards_24h_buckets']
+			: array_fill(0, 48, 0.0);
 		$in_geom = $spark_geom($in_series);
 		$out_geom = $spark_geom($out_series);
 
@@ -381,124 +394,6 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 		);
 	}
 
-		$hover_tip = (new CDiv(
-			(new CDiv($port['name']))->addClass('port24-tooltip-title')
-		))
-			->addClass('port24-hover-tip')
-			->addItem((new CDiv(sprintf(_('State: %s'), $state)))->addClass('port24-tip-meta'))
-			->addItem((new CDiv(sprintf(_('Type: %s'), $port_type)))->addClass('port24-tip-meta'))
-			->addItem(
-				(new CDiv(sprintf(
-					_('Utilization: %s'),
-					(isset($port['utilization_percent']) && $port['utilization_percent'] !== null)
-						? number_format((float) $port['utilization_percent'], 1).'%'
-						: 'n/a'
-				)))->addClass('port24-tip-meta')
-			)
-			->addItem((new CDiv(sprintf(_('Trigger: %s'), $trigger_name)))->addClass('port24-tip-meta'))
-			->addItem((new CDiv(sprintf(
-				_('Errors 24h: %1$s (in %2$s / out %3$s), %4$s'),
-				$fmt_counter($errors_24h_total),
-				$fmt_counter($errors_24h_in),
-				$fmt_counter($errors_24h_out),
-				$fmt_trend($errors_24h_trend)
-			)))->addClass('port24-tip-meta'))
-			->addItem((new CDiv(sprintf(
-				_('Discards 24h: %1$s (in %2$s / out %3$s), %4$s'),
-				$fmt_counter($discards_24h_total),
-				$fmt_counter($discards_24h_in),
-				$fmt_counter($discards_24h_out),
-				$fmt_trend($discards_24h_trend)
-			)))->addClass('port24-tip-meta'))
-			->addItem(
-				(new CDiv())
-					->addClass('port24-tip-row')
-					->addItem((new CSpan('IN'))->addClass('port24-tip-label'))
-					->addItem($make_spark_svg($in_geom, 'port24-tip-path-in', 'port24-tip-area-in'))
-					->addItem((new CSpan($fmt_last($in_series)))->addClass('port24-tip-value'))
-			)
-			->addItem(
-				(new CDiv())
-					->addClass('port24-tip-row')
-					->addItem((new CSpan('OUT'))->addClass('port24-tip-label'))
-					->addItem($make_spark_svg($out_geom, 'port24-tip-path-out', 'port24-tip-area-out'))
-					->addItem((new CSpan($fmt_last($out_series)))->addClass('port24-tip-value'))
-			)
-			->addItem(
-				(new CDiv())
-					->addClass('port24-tip-state-row')
-					->addItem(
-						(new CDiv())
-							->addClass('port24-tip-state-head')
-								->addItem((new CSpan('24h online state'))->addClass('port24-tip-state-title'))
-							->addItem((new CSpan('now'))->addClass('port24-tip-state-title'))
-					)
-						->addItem(
-							(new CDiv(
-								(function(array $segments): CDiv {
-								$grid = (new CDiv())->addClass('port24-tip-state-grid');
-								if ($segments === []) {
-									$segments = array_fill(0, 48, -1);
-								}
-
-								foreach ($segments as $state) {
-									$class = 'port24-tip-state-seg';
-									if ((int) $state === 1) {
-										$class .= ' problem';
-									}
-									elseif ((int) $state === 0) {
-										$class .= ' ok';
-									}
-
-									$grid->addItem((new CSpan())->addClass($class));
-								}
-
-								return $grid;
-							})($state_24h)
-							))
-						)
-				)
-			->addItem(
-				(new CDiv())
-					->addClass('port24-tip-counter-row')
-					->addItem(
-						(new CDiv())
-							->addClass('port24-tip-counter-head')
-							->addItem((new CSpan('Errors 24h'))->addClass('port24-tip-state-title'))
-							->addItem((new CSpan($fmt_counter($errors_24h_total)))->addClass('port24-tip-state-title'))
-					)
-					->addItem((function(array $segments): CDiv {
-						$grid = (new CDiv())->addClass('port24-tip-counter-grid');
-						if ($segments === []) {
-							$segments = array_fill(0, 48, 'port24-tip-counter-seg');
-						}
-						foreach ($segments as $class) {
-							$grid->addItem((new CSpan())->addClass((string) $class));
-						}
-						return $grid;
-					})($errors_bucket_classes))
-			)
-			->addItem(
-				(new CDiv())
-					->addClass('port24-tip-counter-row')
-					->addItem(
-						(new CDiv())
-							->addClass('port24-tip-counter-head')
-							->addItem((new CSpan('Discards 24h'))->addClass('port24-tip-state-title'))
-							->addItem((new CSpan($fmt_counter($discards_24h_total)))->addClass('port24-tip-state-title'))
-					)
-					->addItem((function(array $segments): CDiv {
-						$grid = (new CDiv())->addClass('port24-tip-counter-grid');
-						if ($segments === []) {
-							$segments = array_fill(0, 48, 'port24-tip-counter-seg');
-						}
-						foreach ($segments as $class) {
-							$grid->addItem((new CSpan())->addClass((string) $class));
-						}
-						return $grid;
-					})($discards_bucket_classes))
-				);
-
 	if ($port['url'] !== '') {
 		$card = new CLink($content, $port['url']);
 	}
@@ -509,7 +404,10 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 	$card
 		->addClass('port24-card')
 		->setAttribute('style', '--port-color: '.$display_color.';')
-		->setAttribute('data-port-name', (string) $port['name']);
+		->setAttribute('data-port-name', (string) $port['name'])
+		->setAttribute('onmouseenter', $live_select_js)
+		->setAttribute('onclick', $live_select_js)
+		->setAttribute('onfocus', $live_select_js);
 	if ($show_utilization_overlay) {
 		$card
 			->addClass('port24-heatmap')
@@ -525,12 +423,53 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 	if (!empty($port['traffic_out_item_key'])) {
 		$card->setAttribute('data-traffic-out-key', (string) $port['traffic_out_item_key']);
 	}
+	$card->setAttribute('data-live-in-value', $fmt_last($in_series));
+	$card->setAttribute('data-live-out-value', $fmt_last($out_series));
+	$card->setAttribute(
+		'data-live-util',
+		(isset($port['utilization_percent']) && $port['utilization_percent'] !== null)
+			? number_format((float) $port['utilization_percent'], 1).'%'
+			: '0.0%'
+	);
+	$card->setAttribute('data-live-in-line', (string) ($in_geom['line'] ?? ''));
+	$card->setAttribute('data-live-in-area', (string) ($in_geom['area'] ?? ''));
+	$card->setAttribute('data-live-in-last-x', (string) ($in_geom['last_x'] ?? '0'));
+	$card->setAttribute('data-live-in-last-y', (string) ($in_geom['last_y'] ?? '0'));
+	$card->setAttribute('data-live-out-line', (string) ($out_geom['line'] ?? ''));
+	$card->setAttribute('data-live-out-area', (string) ($out_geom['area'] ?? ''));
+	$card->setAttribute('data-live-out-last-x', (string) ($out_geom['last_x'] ?? '0'));
+	$card->setAttribute('data-live-out-last-y', (string) ($out_geom['last_y'] ?? '0'));
+	$card->setAttribute('data-live-errors', sprintf(
+		'%1$s (in %2$s / out %3$s), %4$s',
+		$fmt_counter($errors_24h_total),
+		$fmt_counter($errors_24h_in),
+		$fmt_counter($errors_24h_out),
+		$fmt_trend($errors_24h_trend)
+	));
+	$card->setAttribute('data-live-discards', sprintf(
+		'%1$s (in %2$s / out %3$s), %4$s',
+		$fmt_counter($discards_24h_total),
+		$fmt_counter($discards_24h_in),
+		$fmt_counter($discards_24h_out),
+		$fmt_trend($discards_24h_trend)
+	));
+	$card->setAttribute(
+		'data-live-errors-bars',
+		implode(',', array_map(static fn($v): string => (string) max(0.0, (float) $v), $errors_24h_buckets))
+	);
+	$card->setAttribute(
+		'data-live-discards-bars',
+		implode(',', array_map(static fn($v): string => (string) max(0.0, (float) $v), $discards_24h_buckets))
+	);
+	$card->setAttribute(
+		'data-live-state',
+		implode(',', array_map(static fn($v): string => (string) ((int) $v), $state_24h !== [] ? $state_24h : array_fill(0, 48, -1)))
+	);
 
-		return (new CDiv())
-			->addClass('port24-card-wrap')
-			->addItem($card)
-			->addItem($hover_tip);
-	};
+			return (new CDiv())
+				->addClass('port24-card-wrap')
+				->addItem($card);
+		};
 
 $main_grid = (new CDiv())
 	->addClass('port24-grid')
@@ -562,9 +501,9 @@ if ($sfp_ports !== []) {
 }
 
 	$switch->addItem($face);
-	$container->addItem($switch);
 
 if ($show_utilization_overlay) {
+	$util_wrap = null;
 	$util_grid = (new CDiv())->addClass('port24-util-grid');
 	foreach ($data['ports'] as $idx => $port) {
 		$util = isset($port['utilization_percent']) && $port['utilization_percent'] !== null
@@ -585,12 +524,380 @@ if ($show_utilization_overlay) {
 		);
 	}
 
-	$container->addItem(
-		(new CDiv($util_grid))->addClass('port24-util-grid-wrap')
+	$util_wrap = (new CDiv($util_grid))->addClass('port24-util-grid-wrap');
+}
+
+$summary = is_array($data['switch_summary'] ?? null) ? $data['switch_summary'] : [];
+$summary_rows = [];
+$monitoring_enabled = (array_key_exists('monitoring_enabled', $summary) && (bool) $summary['monitoring_enabled']);
+$summary_rows[] = [_('Utilization'), sprintf(
+	'%s avg, %s peak',
+	(isset($summary['avg_utilization']) && $summary['avg_utilization'] !== null)
+		? number_format((float) $summary['avg_utilization'], 1).'%' : 'n/a',
+	(isset($summary['peak_utilization']) && $summary['peak_utilization'] !== null)
+		? number_format((float) $summary['peak_utilization'], 1).'%' : 'n/a'
+)];
+
+$hardware = trim((string) ($summary['hardware'] ?? ''));
+if ($hardware !== '') {
+	$summary_rows[] = [_('Hardware'), $hardware];
+}
+$vlans = trim((string) ($summary['vlans'] ?? ''));
+if ($vlans !== '') {
+	$summary_rows[] = [_('VLANs'), $vlans];
+}
+$cpu = trim((string) ($summary['cpu'] ?? ''));
+if ($cpu !== '') {
+	$summary_rows[] = [_('CPU'), $cpu];
+}
+$fan = trim((string) ($summary['fan'] ?? ''));
+if ($fan !== '') {
+	$summary_rows[] = [_('Fan'), $fan];
+}
+$uptime = trim((string) ($summary['uptime'] ?? ''));
+if ($uptime !== '') {
+	$summary_rows[] = [_('Uptime'), $uptime];
+}
+$serial = trim((string) ($summary['serial'] ?? ''));
+if ($serial !== '') {
+	$summary_rows[] = [_('Serial'), $serial];
+}
+$software = trim((string) ($summary['software'] ?? ''));
+if ($software !== '') {
+	$summary_rows[] = [_('Software'), $software];
+}
+$os = trim((string) ($summary['os'] ?? ''));
+if ($os !== '') {
+	$summary_rows[] = [_('OS'), $os];
+}
+
+$summary_grid = (new CDiv())->addClass('port24-summary-grid');
+$summary_grid->addItem(
+	(new CDiv())
+		->addClass('port24-summary-item')
+		->addItem((new CSpan(_('Monitoring').':'))->addClass('port24-summary-k'))
+		->addItem(
+			(new CSpan(
+				(new CSpan())
+					->addClass('port24-status-dot')
+					->addClass($monitoring_enabled ? 'ok' : 'problem')
+			))
+				->addClass('port24-status-value')
+		)
+);
+foreach ($summary_rows as [$key, $value]) {
+	if ($value === '') {
+		continue;
+	}
+
+	$summary_grid->addItem(
+		(new CDiv())
+			->addClass('port24-summary-item')
+			->addItem((new CSpan($key.':'))->addClass('port24-summary-k'))
+			->addItem((new CSpan($value))->addClass('port24-summary-v'))
 	);
 }
+$live = (new CDiv())->addClass('port24-summary-live')
+	->addItem(
+		(new CDiv())
+			->addClass('port24-summary-live-head')
+			->addItem((new CSpan(_('Port traffic')))->addClass('port24-summary-live-title'))
+	)
+	->addItem(
+		(new CDiv())
+			->addClass('port24-summary-live-body')
+			->addItem(
+				(new CDiv())
+					->addItem(
+						(new CDiv())
+							->addClass('port24-summary-live-row')
+							->addItem((new CSpan('IN'))->addClass('port24-summary-k'))
+							->addItem((new CDiv())->addClass('port24-summary-live-spark')->setAttribute('data-live-spark', 'in'))
+							->addItem((new CSpan('n/a'))->addClass('port24-summary-live-value')->setAttribute('data-live-value', 'in'))
+					)
+						->addItem(
+							(new CDiv())
+								->addClass('port24-summary-live-row')
+								->addItem((new CSpan('OUT'))->addClass('port24-summary-k'))
+								->addItem((new CDiv())->addClass('port24-summary-live-spark')->setAttribute('data-live-spark', 'out'))
+								->addItem((new CSpan('n/a'))->addClass('port24-summary-live-value')->setAttribute('data-live-value', 'out'))
+						)
+						->addItem(
+							(new CDiv())
+								->addClass('port24-summary-live-meta')
+								->addItem((new CSpan('Utilization'))->addClass('port24-summary-k'))
+								->addItem((new CSpan('n/a'))->addClass('port24-summary-live-value')->setAttribute('data-live-util', '1'))
+						)
+				)
+			->addItem(
+				(new CDiv())
+					->addClass('port24-summary-bars')
+					->addItem(
+						(new CDiv())
+							->addClass('port24-tip-state-row')
+							->addItem(
+								(new CDiv())
+									->addClass('port24-tip-state-head')
+									->addItem((new CSpan('24h online state'))->addClass('port24-tip-state-title'))
+									->addItem((new CSpan('now'))->addClass('port24-tip-state-title'))
+							)
+							->addItem(
+								(new CDiv(
+									(new CDiv())->addClass('port24-tip-state-grid')
+								))
+									->addClass('port24-summary-live-state')
+									->setAttribute('data-live-state-grid', '1')
+							)
+					)
+					->addItem(
+						(new CDiv())
+							->addClass('port24-tip-state-row')
+							->addItem(
+								(new CDiv())
+									->addClass('port24-tip-state-head')
+									->addItem((new CSpan('Errors 24h'))->addClass('port24-tip-state-title'))
+									->addItem((new CSpan('n/a'))->addClass('port24-tip-state-title')->setAttribute('data-live-errors', '1'))
+							)
+							->addItem(
+								(new CDiv(
+									(new CDiv())->addClass('port24-tip-state-grid')
+								))
+									->addClass('port24-summary-live-state')
+									->setAttribute('data-live-errors-grid', '1')
+							)
+					)
+					->addItem(
+						(new CDiv())
+							->addClass('port24-tip-state-row')
+							->addItem(
+								(new CDiv())
+									->addClass('port24-tip-state-head')
+									->addItem((new CSpan('Discards 24h'))->addClass('port24-tip-state-title'))
+									->addItem((new CSpan('n/a'))->addClass('port24-tip-state-title')->setAttribute('data-live-discards', '1'))
+							)
+							->addItem(
+								(new CDiv(
+									(new CDiv())->addClass('port24-tip-state-grid')
+								))
+									->addClass('port24-summary-live-state')
+									->setAttribute('data-live-discards-grid', '1')
+							)
+					)
+			)
+	);
+
+$summary_panel = (new CDiv())
+	->addClass('port24-summary')
+	->addItem($summary_grid)
+	->addItem($live);
+
+$switch->addItem($summary_panel);
+$container->addItem($switch);
+if (isset($util_wrap) && $util_wrap instanceof CDiv) {
+	$container->addItem($util_wrap);
+}
+
+$live_script = <<<JS
+(function() {
+	const root = document.getElementById(%s);
+	if (!root) {
+		return;
+	}
+	const titleNode = root.querySelector('.port24-summary-live-title');
+	const inSpark = root.querySelector('[data-live-spark="in"]');
+	const outSpark = root.querySelector('[data-live-spark="out"]');
+	const inValue = root.querySelector('[data-live-value="in"]');
+	const outValue = root.querySelector('[data-live-value="out"]');
+	const utilValue = root.querySelector('[data-live-util="1"]');
+	const errorsValue = root.querySelector('[data-live-errors="1"]');
+	const discardsValue = root.querySelector('[data-live-discards="1"]');
+	const stateGrid = root.querySelector('[data-live-state-grid="1"]');
+	const errorsGrid = root.querySelector('[data-live-errors-grid="1"]');
+	const discardsGrid = root.querySelector('[data-live-discards-grid="1"]');
+	if (!titleNode || !inSpark || !outSpark || !inValue || !outValue || !utilValue || !errorsValue || !discardsValue
+			|| !stateGrid || !errorsGrid || !discardsGrid) {
+		return;
+	}
+
+		const svgNS = 'http://www.w3.org/2000/svg';
+		const makeSpark = function(kind, line, area, lastX, lastY) {
+			const svg = document.createElementNS(svgNS, 'svg');
+			svg.setAttribute('viewBox', '0 0 120 26');
+			svg.classList.add('port24-tip-svg');
+
+			const baseline = document.createElementNS(svgNS, 'line');
+			baseline.setAttribute('x1', '3');
+			baseline.setAttribute('y1', '13');
+			baseline.setAttribute('x2', '117');
+			baseline.setAttribute('y2', '13');
+			baseline.setAttribute('stroke', 'rgba(148,163,184,0.25)');
+			baseline.setAttribute('stroke-width', '1');
+			svg.appendChild(baseline);
+
+			if (area) {
+				const areaPath = document.createElementNS(svgNS, 'path');
+				areaPath.setAttribute('d', area);
+				areaPath.setAttribute('class', kind === 'in' ? 'port24-tip-area-in' : 'port24-tip-area-out');
+				svg.appendChild(areaPath);
+			}
+			if (line) {
+				const linePath = document.createElementNS(svgNS, 'path');
+				linePath.setAttribute('d', line);
+				linePath.setAttribute('class', kind === 'in' ? 'port24-tip-path-in' : 'port24-tip-path-out');
+				svg.appendChild(linePath);
+
+				const dot = document.createElementNS(svgNS, 'circle');
+				dot.setAttribute('cx', String(lastX || 0));
+				dot.setAttribute('cy', String(lastY || 0));
+				dot.setAttribute('r', '2.8');
+				dot.setAttribute('class', 'port24-tip-dot');
+				svg.appendChild(dot);
+			}
+
+			return svg;
+		};
+		const renderStateGrid = function(csv) {
+			const values = (csv || '').split(',');
+			let html = '<div class="port24-tip-state-grid">';
+			if (!csv || values.length === 0) {
+				for (let i = 0; i < 48; i++) {
+					html += '<span class="port24-tip-state-seg"></span>';
+				}
+				return html + '</div>';
+			}
+			for (let i = 0; i < values.length; i++) {
+				let cls = 'port24-tip-state-seg';
+				if (values[i] === '1') {
+					cls += ' problem';
+				}
+				else if (values[i] === '0') {
+					cls += ' ok';
+				}
+				html += '<span class="' + cls + '"></span>';
+			}
+			return html + '</div>';
+		};
+		const renderCounterGrid = function(csv, kind) {
+			const values = (csv || '').split(',');
+			let max = 0;
+			for (let i = 0; i < values.length; i++) {
+				const n = parseFloat(values[i]);
+				if (!Number.isNaN(n) && n > max) {
+					max = n;
+				}
+			}
+			let html = '<div class="port24-tip-state-grid">';
+			if (!csv || values.length === 0) {
+				for (let i = 0; i < 48; i++) {
+					html += '<span class="port24-tip-state-seg"></span>';
+				}
+				return html + '</div>';
+			}
+			for (let i = 0; i < values.length; i++) {
+				const n = parseFloat(values[i]);
+				let cls = 'port24-tip-state-seg';
+				if (!Number.isNaN(n) && n > 0 && max > 0) {
+					const pct = n / max;
+					if (kind === 'errors') {
+						if (pct > 0.66) {
+							cls += ' problem';
+						}
+						else if (pct > 0.2) {
+							cls += ' ok';
+						}
+					}
+					else {
+						if (pct > 0.66) {
+							cls += ' ok';
+						}
+						else if (pct > 0.2) {
+							cls += ' problem';
+						}
+					}
+				}
+				html += '<span class="' + cls + '"></span>';
+			}
+			return html + '</div>';
+		};
+
+		const reset = function() {
+			titleNode.textContent = 'Port traffic';
+			inSpark.innerHTML = '';
+			outSpark.innerHTML = '';
+			inValue.textContent = 'n/a';
+			outValue.textContent = 'n/a';
+			utilValue.textContent = 'n/a';
+			errorsValue.textContent = 'n/a';
+			discardsValue.textContent = 'n/a';
+		};
+
+		const getText = function(el) {
+			return el && typeof el.textContent === 'string' ? el.textContent.trim() : '';
+		};
+
+		const setFromCard = function(wrap) {
+			if (!wrap) {
+				return;
+			}
+			const labelEl = wrap.querySelector('.port24-label');
+			const name = getText(labelEl) || 'Port';
+			const card = wrap.querySelector('.port24-card');
+			if (!card || !card.dataset) {
+				return;
+			}
+
+			titleNode.textContent = name;
+			inSpark.innerHTML = '';
+			outSpark.innerHTML = '';
+			inSpark.appendChild(makeSpark(
+				'in',
+				card.dataset.liveInLine || '',
+				card.dataset.liveInArea || '',
+				card.dataset.liveInLastX || '0',
+				card.dataset.liveInLastY || '0'
+			));
+			outSpark.appendChild(makeSpark(
+				'out',
+				card.dataset.liveOutLine || '',
+				card.dataset.liveOutArea || '',
+				card.dataset.liveOutLastX || '0',
+				card.dataset.liveOutLastY || '0'
+			));
+			inValue.textContent = card.dataset.liveInValue || 'n/a';
+			outValue.textContent = card.dataset.liveOutValue || 'n/a';
+			utilValue.textContent = card.dataset.liveUtil || 'n/a';
+			errorsValue.textContent = card.dataset.liveErrors || 'n/a';
+			discardsValue.textContent = card.dataset.liveDiscards || 'n/a';
+				stateGrid.innerHTML = renderStateGrid(card.dataset.liveState || '');
+				errorsGrid.innerHTML = renderCounterGrid(card.dataset.liveErrorsBars || '', 'errors');
+				discardsGrid.innerHTML = renderCounterGrid(card.dataset.liveDiscardsBars || '', 'discards');
+			};
+
+		const handleWrapEnter = function(event) {
+			const wrap = event.currentTarget;
+			setFromCard(wrap);
+		};
+
+		const wraps = root.querySelectorAll('.port24-card-wrap');
+		for (let i = 0; i < wraps.length; i++) {
+			wraps[i].addEventListener('mouseenter', handleWrapEnter);
+			wraps[i].addEventListener('click', handleWrapEnter);
+			wraps[i].addEventListener('focusin', handleWrapEnter);
+		}
+
+		const first = wraps.length > 0 ? wraps[0] : null;
+		if (first) {
+			setFromCard(first);
+		}
+		else {
+			reset();
+		}
+})();
+JS;
+$live_script = sprintf($live_script, json_encode($widget_uid));
 
 (new CWidgetView($data))
 	->addItem(new CTag('style', true, $css))
 	->addItem($container)
+	->addItem(new CTag('script', true, $live_script))
 	->show();

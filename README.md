@@ -41,13 +41,16 @@ If you change host, reopen widget edit to refresh trigger lists.
   - state/type/trigger text
   - IN/OUT sparkline + latest value (when user has item read permission)
 
-## Release Notes 1.1.0
+## Release Notes 1.2
 
-- Improved Zabbix 7.4 compatibility in edit dialog initialization (custom bulk container no longer initialized as core collapsible).
-- Improved profile save responsiveness by reducing unnecessary UI refresh/event storms after save.
-- Fixed save button state race (`Saving...` stuck/duplicate trigger path).
-- Unified modern color picker behavior and optimized picker rendering performance.
-- Cleaned up duplicate field sizing/maxlength enforcement paths in edit UI.
+- Added integrated switch summary panel under the switch face.
+- Added summary item-key configuration fields (software, VLANs, CPU, fan, uptime, serial).
+- Added live per-port telemetry block in summary panel (IN/OUT sparklines, utilization, errors, discards, 24h state bars).
+- Restored hover-driven port live updates with click/focus fallback.
+- Removed redundant `Ports: ...` summary row.
+- Improved sparkline visuals and sizing to better match switch style.
+- Updated long item-pattern/key fields to 40 characters for consistency.
+- Kept trigger LED behavior authoritative while utilization overlay remains optional.
 
 ## Compatibility Note
 

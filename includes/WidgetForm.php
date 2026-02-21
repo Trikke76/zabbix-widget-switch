@@ -66,6 +66,30 @@ class WidgetForm extends CWidgetForm {
 				->setDefault(self::DEFAULT_OUT_DISCARDS_PATTERN)
 		);
 		$this->addField(
+			(new CWidgetFieldTextBox('summary_software_item_key', _('Software item key')))
+				->setDefault('sysDescr.0')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('summary_vlans_item_key', _('VLANs item key')))
+				->setDefault('dot1qNumVlans.0')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('summary_cpu_item_key', _('CPU item key')))
+				->setDefault('hrProcessorLoad.0')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('summary_fan_item_key', _('Fan item key')))
+				->setDefault('system.hw.fans[status]')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('summary_uptime_item_key', _('Uptime item key')))
+				->setDefault('sysUpTime.0')
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('summary_serial_item_key', _('Serial item key')))
+				->setDefault('entPhysicalSerialNum.1')
+		);
+		$this->addField(
 			(new CWidgetFieldSelect('utilization_overlay_enabled', _('Show utilization overlay'), [
 				0 => _('No'),
 				1 => _('Yes')

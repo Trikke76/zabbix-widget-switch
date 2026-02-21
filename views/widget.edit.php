@@ -18,6 +18,12 @@ $form->addField(new CWidgetFieldTextBoxView($data['fields']['in_errors_item_patt
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['out_errors_item_pattern']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['in_discards_item_pattern']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['out_discards_item_pattern']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['summary_software_item_key']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['summary_vlans_item_key']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['summary_cpu_item_key']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['summary_fan_item_key']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['summary_uptime_item_key']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['summary_serial_item_key']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['utilization_overlay_enabled']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['speed_item_pattern']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_low_threshold']));
@@ -29,7 +35,6 @@ $form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_high_co
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_na_color']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['legend_size']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['preset']));
-$form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_brand']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_model']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_size']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['row_count']));
