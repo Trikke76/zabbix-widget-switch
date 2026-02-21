@@ -43,6 +43,12 @@ $css = implode('', [
 	'.port24-label{position:absolute;left:calc(4px * var(--port24-scale));right:calc(4px * var(--port24-scale));bottom:calc(2px * var(--port24-scale));text-align:center;font-size:calc(9px * var(--port24-scale));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#c9d3de;}',
 	'.port24-util-track{position:absolute;left:calc(4px * var(--port24-scale));right:calc(4px * var(--port24-scale));bottom:0;height:calc(2px * var(--port24-scale));border-radius:2px;background:rgba(148,163,184,.22);overflow:hidden;}',
 	'.port24-util-fill{display:block;height:100%;width:100%;background:var(--util-c,#22C55E);}',
+	'.port24-tooltip{position:fixed;z-index:100000;pointer-events:none;min-width:190px;background:#0f1722;color:#d9e3ee;border:1px solid #2e3c4d;border-radius:8px;padding:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);font-size:11px;line-height:1.3;display:none;}',
+	'.port24-tooltip-title{font-weight:700;margin-bottom:6px;color:#f8fbff;}',
+	'.port24-tip-meta{margin:2px 0;opacity:.95;}',
+	'.port24-tip-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0;order:20;}',
+	'.port24-tip-label{opacity:.9;min-width:24px;}',
+	'.port24-tip-value{opacity:.95;font-variant-numeric:tabular-nums;}',
 	'.port24-tip-state-row{margin:6px 0 4px 0;order:30;}',
 	'.port24-tip-state-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}',
 	'.port24-tip-state-title{font-size:10px;opacity:.9;letter-spacing:.03em;}',
@@ -156,7 +162,33 @@ $util_color_for = static function(?float $util) use ($util_low_threshold, $util_
 	}
 	return '#BBF7D0';
 };
-$make_card = static function(array $port) use ($show_utilization_overlay, $util_color_for, $traffic_unit_mode): CTag {
+$live_select_js = 'var r=this.closest(".port24-switch");if(!r)return;'
+	.'var t=r.querySelector(".port24-summary-live-title"),is=r.querySelector("[data-live-spark=\"in\"]"),os=r.querySelector("[data-live-spark=\"out\"]"),iv=r.querySelector("[data-live-value=\"in\"]"),ov=r.querySelector("[data-live-value=\"out\"]"),uv=r.querySelector("[data-live-util=\"1\"]"),ev=r.querySelector("[data-live-errors=\"1\"]"),dv=r.querySelector("[data-live-discards=\"1\"]");'
+	.'var sg=r.querySelector("[data-live-state-grid=\"1\"]"),eg=r.querySelector("[data-live-errors-grid=\"1\"]"),dg=r.querySelector("[data-live-discards-grid=\"1\"]");'
+	.'if(!t||!is||!os||!iv||!ov||!uv||!ev||!dv||!sg||!eg||!dg)return;'
+	.'var mk=function(k,l,a,x,y){var s=\'<svg viewBox="0 0 120 26" class="port24-tip-svg"><line x1="3" y1="13" x2="117" y2="13" stroke="rgba(148,163,184,0.25)" stroke-width="1"></line>\';'
+	.'if(a){s+=\'<path d="\'+a+\'" class="\'+(k==="in"?"port24-tip-area-in":"port24-tip-area-out")+\'"></path>\';}'
+	.'if(l){s+=\'<path d="\'+l+\'" class="\'+(k==="in"?"port24-tip-path-in":"port24-tip-path-out")+\'"></path>\';s+=\'<circle cx="\'+(x||0)+\'" cy="\'+(y||0)+\'" r="2.8" class="port24-tip-dot"></circle>\';}'
+	.'return s+"</svg>";};'
+	.'var sh=function(v){var a=(v||"").split(","),h=\'<div class="port24-tip-state-grid">\';'
+	.'if(!v||a.length===0){for(var j=0;j<48;j++){h+=\'<span class="port24-tip-state-seg"></span>\';}return h+"</div>";}'
+	.'for(var i=0;i<a.length;i++){var c="port24-tip-state-seg";if(a[i]==="1"){c+=" problem";}else if(a[i]==="0"){c+=" ok";}h+=\'<span class="\'+c+\'"></span>\';}'
+	.'return h+"</div>";};'
+	.'var shc=function(v,k){var a=(v||"").split(","),m=0,h=\'<div class="port24-tip-state-grid">\';for(var i=0;i<a.length;i++){var n=parseFloat(a[i]);if(!isNaN(n)&&n>m){m=n;}}'
+	.'if(!v||a.length===0){for(var j=0;j<48;j++){h+=\'<span class="port24-tip-state-seg"></span>\';}return h+"</div>";}'
+	.'for(var z=0;z<a.length;z++){var d=parseFloat(a[z]);var c="port24-tip-state-seg";if(!isNaN(d)&&d>0&&m>0){var p=d/m;if(k==="e"){if(p>0.66){c+=" problem";}else if(p>0.2){c+=" ok";}}else{if(p>0.66){c+=" ok";}else if(p>0.2){c+=" problem";}}}h+=\'<span class="\'+c+\'"></span>\';}'
+	.'return h+"</div>";};'
+	.'t.textContent=this.getAttribute("data-port-name")||"Port";'
+	.'is.innerHTML=mk("in",this.dataset.liveInLine||"",this.dataset.liveInArea||"",this.dataset.liveInLastX||"0",this.dataset.liveInLastY||"0");'
+	.'os.innerHTML=mk("out",this.dataset.liveOutLine||"",this.dataset.liveOutArea||"",this.dataset.liveOutLastX||"0",this.dataset.liveOutLastY||"0");'
+	.'iv.textContent=this.dataset.liveInValue||"n/a";ov.textContent=this.dataset.liveOutValue||"n/a";'
+	.'uv.textContent=this.dataset.liveUtil||"0.0%";'
+	.'ev.textContent=this.dataset.liveErrors||"n/a";dv.textContent=this.dataset.liveDiscards||"n/a";'
+	.'sg.innerHTML=sh(this.dataset.liveState||"");'
+	.'eg.innerHTML=shc(this.dataset.liveErrorsBars||"","e");'
+	.'dg.innerHTML=shc(this.dataset.liveDiscardsBars||"","d");';
+
+$make_card = static function(array $port) use ($show_utilization_overlay, $util_color_for, $traffic_unit_mode, $live_select_js): CTag {
 	$active_color = (string) ($port['active_color'] ?? '');
 	if (preg_match('/^#[0-9A-Fa-f]{6}$/', $active_color) !== 1) {
 		$active_color = '#22C55E';
@@ -168,6 +200,30 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 		? (string) $port['utilization_color']
 		: $util_color_for($utilization);
 	$display_color = $active_color;
+
+	if (empty($port['has_trigger'])) {
+		$state = _('No trigger');
+	}
+	elseif ($port['is_problem']) {
+		$state = _('Problem');
+	}
+	else {
+		$state = _('OK');
+	}
+	$port_type = !empty($port['is_sfp']) ? 'SFP' : 'RJ45';
+	$tooltip = $port['name']."\n".sprintf(_('State: %s'), $state);
+	$tooltip .= "\n".sprintf(_('Type: %s'), $port_type);
+	if (isset($port['utilization_percent']) && $port['utilization_percent'] !== null) {
+		$tooltip .= "\n".sprintf(_('Utilization: %s%%'), number_format((float) $port['utilization_percent'], 1));
+	}
+	if ($port['triggerid'] !== '') {
+		$trigger_name = $port['trigger_name'] !== '' ? $port['trigger_name'] : '#'.$port['triggerid'];
+		$tooltip .= "\n".sprintf(_('Trigger: %s'), $trigger_name);
+	}
+	else {
+		$tooltip .= "\n"._('Trigger: not configured');
+		$trigger_name = _('not configured');
+	}
 
 		$spark_geom = static function(array $values, int $width = 120, int $height = 26, int $padding = 3): array {
 			$count = count($values);
@@ -348,7 +404,10 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 	$card
 		->addClass('port24-card')
 		->setAttribute('style', '--port-color: '.$display_color.';')
-		->setAttribute('data-port-name', (string) $port['name']);
+		->setAttribute('data-port-name', (string) $port['name'])
+		->setAttribute('onmouseenter', $live_select_js)
+		->setAttribute('onclick', $live_select_js)
+		->setAttribute('onfocus', $live_select_js);
 	if ($show_utilization_overlay) {
 		$card
 			->addClass('port24-heatmap')
@@ -814,27 +873,18 @@ $live_script = <<<JS
 				discardsGrid.innerHTML = renderCounterGrid(card.dataset.liveDiscardsBars || '', 'discards');
 			};
 
-		const updateFromEventTarget = function(target) {
-			if (!(target instanceof Element)) {
-				return;
-			}
-			const wrap = target.closest('.port24-card-wrap');
-			if (wrap && root.contains(wrap)) {
-				setFromCard(wrap);
-			}
+		const handleWrapEnter = function(event) {
+			const wrap = event.currentTarget;
+			setFromCard(wrap);
 		};
 
-		root.addEventListener('mouseenter', function(event) {
-			updateFromEventTarget(event.target);
-		}, true);
-		root.addEventListener('click', function(event) {
-			updateFromEventTarget(event.target);
-		});
-		root.addEventListener('focusin', function(event) {
-			updateFromEventTarget(event.target);
-		});
-
 		const wraps = root.querySelectorAll('.port24-card-wrap');
+		for (let i = 0; i < wraps.length; i++) {
+			wraps[i].addEventListener('mouseenter', handleWrapEnter);
+			wraps[i].addEventListener('click', handleWrapEnter);
+			wraps[i].addEventListener('focusin', handleWrapEnter);
+		}
+
 		const first = wraps.length > 0 ? wraps[0] : null;
 		if (first) {
 			setFromCard(first);
