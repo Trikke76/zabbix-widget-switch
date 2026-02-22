@@ -54,6 +54,23 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Build release notes
+        if: steps.tagcheck.outputs.exists == 'false'
+        id: notes
+        run: |
+          PREV_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n1 || true)
+          {
+            echo "## What's Changed"
+            echo
+            if [ -n "$PREV_TAG" ]; then
+              git log --no-merges --pretty='- %s (%h)' "${PREV_TAG}..HEAD"
+            else
+              git log --no-merges --pretty='- %s (%h)'
+            fi
+            echo
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG:-initial}...${{ steps.version.outputs.tag }}"
+          } > dist/release-notes.md
+
       - name: Create and push tag
         if: steps.tagcheck.outputs.exists == 'false'
         run: |
@@ -66,5 +83,5 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
-          generate_release_notes: true
+          body_path: dist/release-notes.md
           files: dist/switch-widget-${{ steps.version.outputs.version }}.zip
