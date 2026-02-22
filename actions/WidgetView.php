@@ -10,6 +10,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 	private const DEFAULT_ROW_COUNT = 2;
 	private const DEFAULT_PORTS_PER_ROW = 12;
 	private const DEFAULT_PORT_INDEX_START = 1;
+	private const DEFAULT_SFP_INDEX_START = 0;
 	private const DEFAULT_TRAFFIC_IN_PATTERN = 'ifInOctets[*]';
 	private const DEFAULT_TRAFFIC_OUT_PATTERN = 'ifOutOctets[*]';
 	private const DEFAULT_SPEED_PATTERN = 'ifHighSpeed[*]';
@@ -37,6 +38,11 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$traffic_out_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['traffic_out_item_pattern'] ?? self::DEFAULT_TRAFFIC_OUT_PATTERN), self::DEFAULT_TRAFFIC_OUT_PATTERN);
 		$port_index_start = $this->clamp(
 			$this->extractNonNegativeInt($this->fields_values['port_index_start'] ?? self::DEFAULT_PORT_INDEX_START),
+			0,
+			100000
+		);
+		$sfp_index_start = $this->clamp(
+			$this->extractNonNegativeInt($this->fields_values['sfp_index_start'] ?? self::DEFAULT_SFP_INDEX_START),
 			0,
 			100000
 		);
@@ -110,6 +116,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'traffic_in_item_pattern' => $traffic_in_pattern,
 					'traffic_out_item_pattern' => $traffic_out_pattern,
 					'port_index_start' => $port_index_start,
+					'sfp_index_start' => $sfp_index_start,
 					'traffic_unit_mode' => $traffic_unit_mode,
 					'in_errors_item_pattern' => $in_errors_pattern,
 					'out_errors_item_pattern' => $out_errors_pattern,
@@ -160,7 +167,13 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$sfp_start_index = max(1, $layout['total_ports'] - $layout['sfp_ports'] + 1);
 
 		foreach ($ports as $index => &$port) {
-			$mapped_port_index = $port_index_start + $index;
+			$port['is_sfp'] = ($layout['sfp_ports'] > 0 && ($index + 1) >= $sfp_start_index);
+			if ($port['is_sfp'] && $sfp_index_start > 0) {
+				$mapped_port_index = $sfp_index_start + (($index + 1) - $sfp_start_index);
+			}
+			else {
+				$mapped_port_index = $port_index_start + $index;
+			}
 			$triggerid = $port['triggerid'];
 			$meta = $triggerid !== '' ? ($trigger_meta[$triggerid] ?? null) : null;
 			$is_problem = $meta !== null ? $meta['is_problem'] : false;
@@ -171,7 +184,6 @@ class WidgetView extends CControllerDashboardWidgetView {
 				? 'zabbix.php?action=problem.view&filter_set=1&triggerids%5B0%5D='.$triggerid
 				: '';
 			$port['trigger_name'] = $meta !== null ? $meta['description'] : '';
-			$port['is_sfp'] = ($layout['sfp_ports'] > 0 && ($index + 1) >= $sfp_start_index);
 			$port['hostid'] = $hostid;
 			$port['traffic_in_item_key'] = $this->resolvePortItemKey($traffic_in_pattern, $mapped_port_index);
 			$port['traffic_out_item_key'] = $this->resolvePortItemKey($traffic_out_pattern, $mapped_port_index);
@@ -306,6 +318,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'traffic_in_item_pattern' => $traffic_in_pattern,
 				'traffic_out_item_pattern' => $traffic_out_pattern,
 				'port_index_start' => $port_index_start,
+				'sfp_index_start' => $sfp_index_start,
 				'traffic_unit_mode' => $traffic_unit_mode,
 				'in_errors_item_pattern' => $in_errors_pattern,
 				'out_errors_item_pattern' => $out_errors_pattern,

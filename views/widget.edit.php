@@ -15,6 +15,7 @@ $form->addField(new CWidgetFieldTextBoxView($data['fields']['traffic_in_item_pat
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['traffic_out_item_pattern']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['traffic_unit_mode']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['port_index_start']));
+$form->addField(new CWidgetFieldTextBoxView($data['fields']['sfp_index_start']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['in_errors_item_pattern']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['out_errors_item_pattern']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['in_discards_item_pattern']));

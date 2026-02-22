@@ -255,7 +255,17 @@
 			], 40, 40);
 			enforceTextFieldsByLabels(['Brand', 'Model'], 30, 30);
 			enforceTextFieldsByLabels(['Size (%)', 'Rows', 'Ports per row', 'SFP ports'], 6, 4, {numericOnly: true});
-			enforceTextFieldsByLabels(['Port index start'], 8, 6, {numericOnly: true});
+			enforceTextFieldsByLabels(['Port index start', 'SFP index start (optional)'], 8, 6, {numericOnly: true});
+			const sfpIndexField = findField('sfp_index_start');
+			if (sfpIndexField) {
+				const wrap = sfpIndexField.closest('.form-field');
+				if (wrap && !wrap.querySelector('.port24-field-hint')) {
+					const hint = document.createElement('span');
+					hint.className = 'port24-field-hint';
+					hint.textContent = '0 = continue after last UTP port';
+					wrap.appendChild(hint);
+				}
+			}
 			ensureCompactMainLayout();
 			enforceTextFieldsByLabels([
 				'Utilization low threshold (%)',
@@ -440,6 +450,7 @@
 			'.port24-compact-main-pair{display:grid;grid-template-columns:1fr;row-gap:4px;align-items:start;}',
 			'.port24-compact-main-pair > label{text-align:left;margin:0;}',
 			'.port24-compact-main-pair > .form-field{margin:0 !important;width:auto !important;min-width:0 !important;max-width:none !important;}',
+			'.port24-field-hint{display:inline-block;margin-left:8px;font-size:11px;line-height:1.2;color:#9fb2c8;vertical-align:middle;}',
 			'.port24-item-suggest-pop{position:absolute;left:0;right:0;top:100%;margin-top:2px;z-index:1200;background:#1b2430;border:1px solid #3a4655;border-radius:4px;box-shadow:0 10px 24px rgba(0,0,0,.35);max-height:220px;overflow:auto;}',
 			'.port24-item-suggest-pop.is-hidden{display:none;}',
 			'.port24-item-suggest-item{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:0;background:transparent;color:#e6edf7;padding:6px 8px;text-align:left;cursor:pointer;font-size:12px;}',

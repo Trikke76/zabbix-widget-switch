@@ -13,6 +13,7 @@ class WidgetForm extends CWidgetForm {
 	private const DEFAULT_TRAFFIC_IN_PATTERN = 'ifInOctets[*]';
 	private const DEFAULT_TRAFFIC_OUT_PATTERN = 'ifOutOctets[*]';
 	private const DEFAULT_PORT_INDEX_START = 1;
+	private const DEFAULT_SFP_INDEX_START = 0;
 	private const DEFAULT_SPEED_PATTERN = 'ifHighSpeed[*]';
 	private const DEFAULT_IN_ERRORS_PATTERN = 'ifInErrors[*]';
 	private const DEFAULT_OUT_ERRORS_PATTERN = 'ifOutErrors[*]';
@@ -53,6 +54,10 @@ class WidgetForm extends CWidgetForm {
 		$this->addField(
 			(new CWidgetFieldTextBox('port_index_start', _('Port index start')))
 				->setDefault((string) self::DEFAULT_PORT_INDEX_START)
+		);
+		$this->addField(
+			(new CWidgetFieldTextBox('sfp_index_start', _('SFP index start (optional)')))
+				->setDefault((string) self::DEFAULT_SFP_INDEX_START)
 		);
 		$this->addField(
 			(new CWidgetFieldTextBox('in_errors_item_pattern', _('Errors in item pattern')))
