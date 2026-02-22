@@ -62,8 +62,10 @@ $css = implode('', [
 		'.port24-tip-path-in{fill:none;stroke:#4fb9ff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}',
 		'.port24-tip-path-out{fill:none;stroke:#ffb020;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}',
 		'.port24-tip-dot{fill:#334155;stroke:#dbeafe;stroke-width:1.1;}',
-	'.port24-util-grid-wrap{margin-top:10px;}',
-	'.port24-util-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:4px;}',
+	'.port24-util-grid-wrap{margin-top:10px;padding:0 calc(14px * var(--port24-scale));}',
+	'.port24-util-slot-grid{display:grid;grid-auto-flow:row;column-gap:0;row-gap:4px;width:100%;}',
+	'.port24-util-sep{justify-self:center;align-self:stretch;width:1px;border-radius:1px;',
+	'background:linear-gradient(180deg,rgba(203,213,225,.08),rgba(203,213,225,.32),rgba(203,213,225,.08));}',
 	'.port24-util-cell{border:1px solid rgba(15,23,34,.28);border-radius:3px;padding:4px 3px;text-align:center;font-size:10px;line-height:1.2;color:#0f1722;}',
 	'.port24-util-cell-port{display:block;font-weight:700;opacity:.8;margin-bottom:2px;}',
 	'.port24-util-cell-val{display:block;font-weight:700;}',
@@ -142,6 +144,7 @@ $switch->addItem($head);
 $utp_ports = [];
 $sfp_ports = [];
 foreach ($data['ports'] as $port) {
+	$port['__display_index'] = count($utp_ports) + count($sfp_ports) + 1;
 	if (!empty($port['is_sfp'])) {
 		$sfp_ports[] = $port;
 	}
@@ -476,7 +479,7 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 
 $main_grid = (new CDiv())
 	->addClass('port24-grid')
-	->setAttribute('style', '--port24-columns: '.$columns.';');
+	->setAttribute('style', 'grid-template-columns:repeat('.$columns.',minmax(0,1fr));');
 
 foreach ($utp_ports as $port) {
 	$main_grid->addItem($make_card($port));
@@ -485,6 +488,7 @@ foreach ($utp_ports as $port) {
 $face = (new CDiv())->addClass('port24-face');
 $face->addItem((new CDiv($main_grid))->addClass('port24-main'));
 
+$sfp_columns = 0;
 if ($sfp_ports !== []) {
 	$sfp_count = count($sfp_ports);
 	$sfp_columns = max(1, (int) ceil($sfp_count / $row_count));
@@ -494,7 +498,12 @@ if ($sfp_ports !== []) {
 	$sfp_columns = min($sfp_count, $sfp_columns);
 	$uplink_grid = (new CDiv())
 		->addClass('port24-sfp-grid')
-		->setAttribute('style', '--port24-sfp-columns: '.$sfp_columns.';');
+		->setAttribute(
+			'style',
+			'grid-template-columns:repeat('
+			.$sfp_columns
+			.',minmax(calc(56px * var(--port24-scale)),calc(72px * var(--port24-scale))));'
+		);
 
 	foreach ($sfp_ports as $port) {
 		$uplink_grid->addItem($make_card($port));
@@ -507,8 +516,7 @@ if ($sfp_ports !== []) {
 
 if ($show_utilization_overlay) {
 	$util_wrap = null;
-	$util_grid = (new CDiv())->addClass('port24-util-grid');
-	foreach ($data['ports'] as $idx => $port) {
+	$make_util_cell = static function(array $port, string $placement_style = '') use ($util_color_for): CDiv {
 		$util = isset($port['utilization_percent']) && $port['utilization_percent'] !== null
 			? (float) $port['utilization_percent']
 			: null;
@@ -516,18 +524,77 @@ if ($show_utilization_overlay) {
 		$cell_color = isset($port['utilization_color']) && is_string($port['utilization_color'])
 			? (string) $port['utilization_color']
 			: $util_color_for($util);
-		$port_label = 'P'.($idx + 1);
+		$port_label = 'P'.(int) ($port['__display_index'] ?? 0);
+		$style = 'background: '.$cell_color.';';
+		if ($placement_style !== '') {
+			$style .= $placement_style;
+		}
 
-		$util_grid->addItem(
-			(new CDiv())
-				->addClass('port24-util-cell')
-				->setAttribute('style', 'background: '.$cell_color.';')
-				->addItem((new CSpan($port_label))->addClass('port24-util-cell-port'))
-				->addItem((new CSpan($util_text))->addClass('port24-util-cell-val'))
+		return (new CDiv())
+			->addClass('port24-util-cell')
+			->setAttribute('style', $style)
+			->addItem((new CSpan($port_label))->addClass('port24-util-cell-port'))
+			->addItem((new CSpan($util_text))->addClass('port24-util-cell-val'));
+	};
+
+	$split_slot_count = ($sfp_ports !== []) ? 1 : 0;
+	$heatmap_sfp_columns = 0;
+	if ($sfp_ports !== []) {
+		$heatmap_sfp_columns = max(
+			(count($sfp_ports) > 1) ? 2 : 1,
+			(int) $sfp_columns
 		);
+		$heatmap_sfp_columns = min(count($sfp_ports), $heatmap_sfp_columns);
+	}
+	$grid_template_parts = ['repeat('.$columns.',minmax(0,1fr))'];
+	if ($split_slot_count > 0) {
+		$grid_template_parts[] = 'repeat('.$split_slot_count.',minmax(calc(6px * var(--port24-scale)),calc(10px * var(--port24-scale))))';
+	}
+	if ($heatmap_sfp_columns > 0) {
+		$grid_template_parts[] = 'repeat('.$heatmap_sfp_columns.',minmax(0,1fr))';
+	}
+	$util_slot_grid = (new CDiv())
+		->addClass('port24-util-slot-grid')
+		->setAttribute('style', 'grid-template-columns:'.implode(' ', $grid_template_parts).';');
+
+	$utp_rows = max(1, (int) ceil(count($utp_ports) / $columns));
+	$sfp_rows = ($heatmap_sfp_columns > 0) ? max(1, (int) ceil(count($sfp_ports) / $heatmap_sfp_columns)) : 0;
+	$max_rows = max($utp_rows, $sfp_rows);
+
+	foreach ($utp_ports as $index => $port) {
+		$row = intdiv((int) $index, $columns) + 1;
+		$col = ((int) $index % $columns) + 1;
+		$util_slot_grid->addItem($make_util_cell(
+			$port,
+			'grid-column:'.$col.';grid-row:'.$row.';'
+		));
 	}
 
-	$util_wrap = (new CDiv($util_grid))->addClass('port24-util-grid-wrap');
+	if ($sfp_ports !== []) {
+		$sfp_start_col = $columns + $split_slot_count + 1;
+		if ($split_slot_count > 0) {
+			$util_slot_grid->addItem(
+				(new CDiv())
+					->addClass('port24-util-sep')
+					->setAttribute(
+						'style',
+						'grid-column:'.($columns + 1).';grid-row:1 / span '.$max_rows.';'
+					)
+			);
+		}
+		foreach ($sfp_ports as $index => $port) {
+			$row = intdiv((int) $index, $heatmap_sfp_columns) + 1;
+			$col = $sfp_start_col + ((int) $index % $heatmap_sfp_columns);
+			$util_slot_grid->addItem($make_util_cell(
+				$port,
+				'grid-column:'.$col.';grid-row:'.$row.';'
+			));
+		}
+	}
+
+	$util_wrap = (new CDiv($util_slot_grid))
+		->addClass('port24-util-grid-wrap')
+		->setAttribute('style', '--port24-scale: '.$scale.';');
 }
 
 $summary = is_array($data['switch_summary'] ?? null) ? $data['switch_summary'] : [];

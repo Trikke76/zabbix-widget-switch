@@ -42,7 +42,7 @@ If you change host, reopen widget edit to refresh trigger lists.
   - state/type/trigger text
   - IN/OUT sparkline + latest value (when user has item read permission)
 
-## Release Notes 1.2.5
+## Release Notes 1.2.6
 
 - Added integrated switch summary panel under the switch face.
 - Added summary item-key configuration fields (software, VLANs, CPU, fan, uptime, serial).
@@ -56,6 +56,7 @@ If you change host, reopen widget edit to refresh trigger lists.
 - Fixed click selection in item suggestion lists to work reliably with blur/focus handling.
 - Added `Port index start` to support devices where interface indexing does not start at `1` (for example `0` on some platforms).
 - Fixed maintenance badge logic to respect maintenance window timing (ended windows now show OFF correctly).
+- Utilization heatmap layout now follows switch geometry (UTP block + separate SFP block), matching port placement better.
 
 ## Compatibility Note
 
