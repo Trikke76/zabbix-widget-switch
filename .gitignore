@@ -1,4 +1,11 @@
-*.zip
+# local distribution copy
+/.dist/
+
+# macOS
 .DS_Store
-dist/
-.dist/
+
+# local build output
+switch/
+
+# packaged releases
+*.zip
