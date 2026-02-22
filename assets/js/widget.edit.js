@@ -255,6 +255,7 @@
 			], 40, 40);
 			enforceTextFieldsByLabels(['Brand', 'Model'], 30, 30);
 			enforceTextFieldsByLabels(['Size (%)', 'Rows', 'Ports per row', 'SFP ports'], 6, 4, {numericOnly: true});
+			enforceTextFieldsByLabels(['Port index start'], 8, 6, {numericOnly: true});
 			ensureCompactMainLayout();
 			enforceTextFieldsByLabels([
 				'Utilization low threshold (%)',
@@ -1544,53 +1545,80 @@
 			}
 			const container = row.parentNode || row;
 
-			let input = container.querySelector('.switch-profile-name');
-			if (input) {
-				return input;
+			// Remove legacy variants from previous iterations.
+			for (const node of Array.from(container.querySelectorAll(
+				'.switch-profile-name-row, .switch-profile-name-inline-label, .switch-profile-name-row-label'
+			))) {
+				node.remove();
 			}
 
-			const label = document.createElement('label');
-			label.textContent = 'Profile name';
-			label.className = 'switch-profile-name-label';
-			label.htmlFor = 'switch_profile_name';
-			label.style.display = 'none';
+			let label = container.querySelector('label.switch-profile-name-label');
+			if (!label) {
+				label = document.createElement('label');
+				label.className = 'switch-profile-name-label';
+				label.textContent = 'Profile name';
+				label.htmlFor = 'switch_profile_name';
+			}
 
-			const wrapper = document.createElement('div');
-			wrapper.className = 'form-field switch-profile-name-wrap';
-			wrapper.style.display = 'none';
-			wrapper.style.alignItems = 'center';
+			let fieldWrap = container.querySelector('.switch-profile-name-wrap');
+			if (!fieldWrap) {
+				fieldWrap = document.createElement('div');
+				fieldWrap.className = 'form-field switch-profile-name-wrap';
+			}
 
-			input = document.createElement('input');
-			input.type = 'text';
-			input.id = 'switch_profile_name';
-			input.className = 'switch-profile-name';
-			input.style.width = '15ch';
-			input.style.maxWidth = '15ch';
-			input.style.minWidth = '15ch';
-			input.maxLength = 15;
+			let input = fieldWrap.querySelector('.switch-profile-name');
+			if (!input) {
+				input = document.createElement('input');
+				input.type = 'text';
+				input.id = 'switch_profile_name';
+				input.className = 'switch-profile-name';
+				input.style.width = '15ch';
+				input.style.maxWidth = '15ch';
+				input.style.minWidth = '15ch';
+				input.maxLength = 15;
 
-			input.addEventListener('input', () => {
-				const presetId = Number(presetField.value);
-				if (presetId < 1 || presetId > 7) {
-					return;
-				}
-				// Do not write profile fields on typing; commit only on explicit save button.
-			});
+				input.addEventListener('input', () => {
+					const presetId = Number(presetField.value);
+					if (presetId < 1 || presetId > 7) {
+						return;
+					}
+					// Do not write profile fields on typing; commit only on explicit save button.
+				});
 
-			wrapper.appendChild(input);
+				fieldWrap.appendChild(input);
+			}
 
 			const brandLabel = container.querySelector('label[for="switch_brand"]');
 			if (brandLabel && brandLabel.parentNode === container) {
-				container.insertBefore(label, brandLabel);
-				container.insertBefore(wrapper, brandLabel);
+				if (label.parentNode !== container) {
+					container.insertBefore(label, brandLabel);
+				}
+				if (fieldWrap.parentNode !== container) {
+					container.insertBefore(fieldWrap, brandLabel);
+				}
+				if (label.nextElementSibling !== fieldWrap) {
+					container.insertBefore(label, fieldWrap);
+				}
+				if (fieldWrap.nextElementSibling !== brandLabel) {
+					container.insertBefore(fieldWrap, brandLabel);
+				}
 			}
 			else if (row.nextSibling) {
-				container.insertBefore(label, row.nextSibling);
-				container.insertBefore(wrapper, row.nextSibling);
+				const anchor = row.nextSibling;
+				if (label.parentNode !== container) {
+					container.insertBefore(label, anchor);
+				}
+				if (fieldWrap.parentNode !== container) {
+					container.insertBefore(fieldWrap, anchor);
+				}
 			}
 			else {
-				container.appendChild(label);
-				container.appendChild(wrapper);
+				if (label.parentNode !== container) {
+					container.appendChild(label);
+				}
+				if (fieldWrap.parentNode !== container) {
+					container.appendChild(fieldWrap);
+				}
 			}
 
 			return input;
@@ -1623,30 +1651,36 @@
 				return;
 			}
 
-			const wrapper = input.closest('.switch-profile-name-wrap');
-				const label = document.querySelector('.switch-profile-name-label');
-				const presetId = Number(presetField.value);
-				if (presetId >= 1 && presetId <= 7) {
+			const container = input.closest('.form-grid') || input.parentNode?.parentNode;
+			const label = container ? container.querySelector('label.switch-profile-name-label') : null;
+			const fieldWrap = input.closest('.switch-profile-name-wrap');
+			const brandLabel = container ? container.querySelector('label[for="switch_brand"]') : null;
+			if (container && label && fieldWrap && brandLabel) {
+				if (label.parentNode !== container) {
+					container.insertBefore(label, brandLabel);
+				}
+				if (fieldWrap.parentNode !== container) {
+					container.insertBefore(fieldWrap, brandLabel);
+				}
+				if (label.nextElementSibling !== fieldWrap) {
+					container.insertBefore(label, fieldWrap);
+				}
+				if (fieldWrap.nextElementSibling !== brandLabel) {
+					container.insertBefore(fieldWrap, brandLabel);
+				}
+			}
+
+			const presetId = Number(presetField.value);
+			if (presetId >= 1 && presetId <= 7) {
 				const nameField = getProfileNameField(presetId);
 				const currentName = nameField && String(nameField.value || '').trim() !== ''
 					? String(nameField.value).trim()
 					: `Profile ${presetId}`;
 
-					input.value = currentName;
-					if (wrapper) {
-						wrapper.style.display = 'grid';
-					}
-					if (label) {
-						label.style.display = '';
-					}
+				input.value = currentName;
 			}
 			else {
-				if (wrapper) {
-					wrapper.style.display = 'none';
-				}
-				if (label) {
-					label.style.display = 'none';
-				}
+				input.value = '';
 			}
 		};
 
@@ -1676,12 +1710,13 @@
 			status.style.padding = '2px 0';
 			wrapper.appendChild(status);
 
-			const nameLabel = container.querySelector('.switch-profile-name-label');
-			if (nameLabel && nameLabel.parentNode === container) {
-				container.insertBefore(wrapper, nameLabel);
+			const nameFieldWrap = container.querySelector('.switch-profile-name-wrap');
+			if (nameFieldWrap && nameFieldWrap.parentNode === container) {
+				container.insertBefore(wrapper, nameFieldWrap.nextSibling);
 			}
 			else if (row.nextSibling) {
-				container.insertBefore(wrapper, row.nextSibling);
+				const anchor = row.nextSibling;
+				container.insertBefore(wrapper, anchor);
 			}
 			else {
 				container.appendChild(wrapper);
@@ -2220,10 +2255,13 @@
 		popup.classList.remove('is-hidden');
 	}
 
-	function scheduleItemSuggestionsForField(field) {
+	function scheduleItemSuggestionsForField(field, options = {}) {
+		const showPopup = options.showPopup !== false;
 		const hostid = String(currentItemSuggestionHostid || '');
 		if (hostid === '') {
-			clearSuggestionListForField(field);
+			if (showPopup) {
+				clearSuggestionListForField(field);
+			}
 			return;
 		}
 
@@ -2232,7 +2270,9 @@
 		const effectiveQuery = query !== '' ? query : seed;
 		const fallbackTokens = getSuggestionPrefixFallbacks(effectiveQuery);
 		if (fallbackTokens.length === 0) {
-			clearSuggestionListForField(field);
+			if (showPopup) {
+				clearSuggestionListForField(field);
+			}
 			return;
 		}
 
@@ -2273,7 +2313,9 @@
 					if (String(currentItemSuggestionHostid || '') !== hostid) {
 						return;
 					}
-					applySuggestionsToField(field, filtered);
+					if (showPopup) {
+						applySuggestionsToField(field, filtered);
+					}
 				})
 				.catch((error) => {
 					if (error && error.name === 'AbortError') {
@@ -2298,7 +2340,8 @@
 		for (const field of getItemPatternFields()) {
 			clearSuggestionListForField(field);
 			if (nextHostid !== '') {
-				scheduleItemSuggestionsForField(field);
+				// Warm up cache only; keep popups closed until user focuses/types.
+				scheduleItemSuggestionsForField(field, {showPopup: false});
 			}
 		}
 	}
@@ -2332,8 +2375,8 @@
 			field.dataset.port24ItemSuggestInit = '1';
 			itemSuggestionTrackedFields.add(field);
 			ensureSuggestionPopupForField(field);
-			field.addEventListener('focus', () => scheduleItemSuggestionsForField(field));
-			field.addEventListener('input', () => scheduleItemSuggestionsForField(field));
+			field.addEventListener('focus', () => scheduleItemSuggestionsForField(field, {showPopup: true}));
+			field.addEventListener('input', () => scheduleItemSuggestionsForField(field, {showPopup: true}));
 			field.addEventListener('blur', () => {
 				window.setTimeout(() => hideSuggestionPopupForField(field), 120);
 			});

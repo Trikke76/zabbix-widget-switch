@@ -76,6 +76,9 @@ $css = implode('', [
 	'.port24-summary-live-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;max-width:620px;}',
 	'.port24-summary-live-title{font-weight:700;color:#e5edf7;}',
 	'.port24-summary-live-sub{font-size:11px;color:#b8c7da;}',
+	'.port24-maintenance-badge{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid rgba(255,255,255,.2);}',
+	'.port24-maintenance-badge.off{background:#334155;color:#dbeafe;}',
+	'.port24-maintenance-badge.on{background:#f59e0b;color:#111827;border-color:#fbbf24;box-shadow:0 0 10px rgba(245,158,11,.45);}',
 	'.port24-summary-live-body{display:grid;grid-template-columns:minmax(220px,300px) minmax(220px,300px);gap:12px;align-items:start;max-width:620px;}',
 	'@media (max-width:860px){.port24-summary-live-body{grid-template-columns:1fr;}}',
 	'.port24-summary-live-row{display:grid;grid-template-columns:40px 150px 72px;align-items:center;justify-content:start;gap:8px;margin:4px 0;max-width:330px;}',
@@ -530,6 +533,7 @@ if ($show_utilization_overlay) {
 $summary = is_array($data['switch_summary'] ?? null) ? $data['switch_summary'] : [];
 $summary_rows = [];
 $monitoring_enabled = (array_key_exists('monitoring_enabled', $summary) && (bool) $summary['monitoring_enabled']);
+$maintenance_active = (array_key_exists('maintenance_active', $summary) && (bool) $summary['maintenance_active']);
 $summary_rows[] = [_('Utilization'), sprintf(
 	'%s avg, %s peak',
 	(isset($summary['avg_utilization']) && $summary['avg_utilization'] !== null)
@@ -602,6 +606,11 @@ $live = (new CDiv())->addClass('port24-summary-live')
 		(new CDiv())
 			->addClass('port24-summary-live-head')
 			->addItem((new CSpan(_('Port traffic')))->addClass('port24-summary-live-title'))
+			->addItem(
+				(new CSpan($maintenance_active ? _('Maintenance: ON') : _('Maintenance: OFF')))
+					->addClass('port24-maintenance-badge')
+					->addClass($maintenance_active ? 'on' : 'off')
+			)
 	)
 	->addItem(
 		(new CDiv())
@@ -878,20 +887,33 @@ $live_script = <<<JS
 			setFromCard(wrap);
 		};
 
-		const wraps = root.querySelectorAll('.port24-card-wrap');
-		for (let i = 0; i < wraps.length; i++) {
-			wraps[i].addEventListener('mouseenter', handleWrapEnter);
-			wraps[i].addEventListener('click', handleWrapEnter);
-			wraps[i].addEventListener('focusin', handleWrapEnter);
-		}
+		const bindLivePanel = function(attempt) {
+			const wraps = root.querySelectorAll('.port24-card-wrap');
+			if (!wraps || wraps.length === 0) {
+				if (attempt < 20) {
+					window.setTimeout(function() { bindLivePanel(attempt + 1); }, 150);
+				}
+				else {
+					reset();
+				}
+				return;
+			}
 
-		const first = wraps.length > 0 ? wraps[0] : null;
-		if (first) {
+			for (let i = 0; i < wraps.length; i++) {
+				if (wraps[i].dataset.port24LiveBound === '1') {
+					continue;
+				}
+				wraps[i].addEventListener('mouseenter', handleWrapEnter);
+				wraps[i].addEventListener('click', handleWrapEnter);
+				wraps[i].addEventListener('focusin', handleWrapEnter);
+				wraps[i].dataset.port24LiveBound = '1';
+			}
+
+			const first = wraps[0];
 			setFromCard(first);
-		}
-		else {
-			reset();
-		}
+		};
+
+		bindLivePanel(0);
 })();
 JS;
 $live_script = sprintf($live_script, json_encode($widget_uid));

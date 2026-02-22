@@ -9,6 +9,7 @@ use CControllerResponseData;
 class WidgetView extends CControllerDashboardWidgetView {
 	private const DEFAULT_ROW_COUNT = 2;
 	private const DEFAULT_PORTS_PER_ROW = 12;
+	private const DEFAULT_PORT_INDEX_START = 1;
 	private const DEFAULT_TRAFFIC_IN_PATTERN = 'ifInOctets[*]';
 	private const DEFAULT_TRAFFIC_OUT_PATTERN = 'ifOutOctets[*]';
 	private const DEFAULT_SPEED_PATTERN = 'ifHighSpeed[*]';
@@ -34,6 +35,11 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$hostid = $this->extractHostId();
 		$traffic_in_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['traffic_in_item_pattern'] ?? self::DEFAULT_TRAFFIC_IN_PATTERN), self::DEFAULT_TRAFFIC_IN_PATTERN);
 		$traffic_out_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['traffic_out_item_pattern'] ?? self::DEFAULT_TRAFFIC_OUT_PATTERN), self::DEFAULT_TRAFFIC_OUT_PATTERN);
+		$port_index_start = $this->clamp(
+			$this->extractNonNegativeInt($this->fields_values['port_index_start'] ?? self::DEFAULT_PORT_INDEX_START),
+			0,
+			100000
+		);
 		$traffic_unit_mode = ((int) ($this->fields_values['traffic_unit_mode'] ?? self::TRAFFIC_UNIT_BYTES)) === self::TRAFFIC_UNIT_BITS
 			? self::TRAFFIC_UNIT_BITS
 			: self::TRAFFIC_UNIT_BYTES;
@@ -103,6 +109,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'legend_text' => $legend_text,
 				'traffic_in_item_pattern' => $traffic_in_pattern,
 					'traffic_out_item_pattern' => $traffic_out_pattern,
+					'port_index_start' => $port_index_start,
 					'traffic_unit_mode' => $traffic_unit_mode,
 					'in_errors_item_pattern' => $in_errors_pattern,
 					'out_errors_item_pattern' => $out_errors_pattern,
@@ -153,6 +160,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$sfp_start_index = max(1, $layout['total_ports'] - $layout['sfp_ports'] + 1);
 
 		foreach ($ports as $index => &$port) {
+			$mapped_port_index = $port_index_start + $index;
 			$triggerid = $port['triggerid'];
 			$meta = $triggerid !== '' ? ($trigger_meta[$triggerid] ?? null) : null;
 			$is_problem = $meta !== null ? $meta['is_problem'] : false;
@@ -165,14 +173,14 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$port['trigger_name'] = $meta !== null ? $meta['description'] : '';
 			$port['is_sfp'] = ($layout['sfp_ports'] > 0 && ($index + 1) >= $sfp_start_index);
 			$port['hostid'] = $hostid;
-			$port['traffic_in_item_key'] = $this->resolvePortItemKey($traffic_in_pattern, $index + 1);
-			$port['traffic_out_item_key'] = $this->resolvePortItemKey($traffic_out_pattern, $index + 1);
-			$port['speed_item_key'] = $this->resolvePortItemKey($speed_pattern, $index + 1);
-			$port['speed_item_key_alt'] = $this->resolvePortItemKey($speed_pattern_alt, $index + 1);
-			$port['in_errors_item_key'] = $this->resolvePortItemKey($in_errors_pattern, $index + 1);
-			$port['out_errors_item_key'] = $this->resolvePortItemKey($out_errors_pattern, $index + 1);
-			$port['in_discards_item_key'] = $this->resolvePortItemKey($in_discards_pattern, $index + 1);
-			$port['out_discards_item_key'] = $this->resolvePortItemKey($out_discards_pattern, $index + 1);
+			$port['traffic_in_item_key'] = $this->resolvePortItemKey($traffic_in_pattern, $mapped_port_index);
+			$port['traffic_out_item_key'] = $this->resolvePortItemKey($traffic_out_pattern, $mapped_port_index);
+			$port['speed_item_key'] = $this->resolvePortItemKey($speed_pattern, $mapped_port_index);
+			$port['speed_item_key_alt'] = $this->resolvePortItemKey($speed_pattern_alt, $mapped_port_index);
+			$port['in_errors_item_key'] = $this->resolvePortItemKey($in_errors_pattern, $mapped_port_index);
+			$port['out_errors_item_key'] = $this->resolvePortItemKey($out_errors_pattern, $mapped_port_index);
+			$port['in_discards_item_key'] = $this->resolvePortItemKey($in_discards_pattern, $mapped_port_index);
+			$port['out_discards_item_key'] = $this->resolvePortItemKey($out_discards_pattern, $mapped_port_index);
 		}
 		unset($port);
 		$traffic_series = $this->loadTrafficSeries($hostid, $ports);
@@ -297,6 +305,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'legend_text' => $legend_text,
 				'traffic_in_item_pattern' => $traffic_in_pattern,
 				'traffic_out_item_pattern' => $traffic_out_pattern,
+				'port_index_start' => $port_index_start,
 				'traffic_unit_mode' => $traffic_unit_mode,
 				'in_errors_item_pattern' => $in_errors_pattern,
 				'out_errors_item_pattern' => $out_errors_pattern,
@@ -361,7 +370,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 		}
 
 		$rows = API::Host()->get([
-			'output' => ['hostid', 'host', 'name', 'status'],
+			'output' => ['hostid', 'host', 'name', 'status', 'maintenance_status', 'maintenanceid'],
 			'hostids' => [$hostid],
 			'selectInventory' => ['os', 'software', 'hardware'],
 			'limit' => 1
@@ -382,6 +391,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 			'name' => $name,
 			'host' => $technical_name,
 			'status' => (int) ($row['status'] ?? 1),
+			'maintenance_status' => (int) ($row['maintenance_status'] ?? 0),
+			'maintenanceid' => (string) ($row['maintenanceid'] ?? ''),
 			'os' => trim((string) ($inventory['os'] ?? '')),
 			'software' => trim((string) ($inventory['software'] ?? '')),
 			'hardware' => trim((string) ($inventory['hardware'] ?? ''))
@@ -437,6 +448,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 
 		return [
 			'monitoring_enabled' => ((int) ($host_meta['status'] ?? 1) === 0),
+			'maintenance_active' => $this->isMaintenanceActive($host_meta),
 			'software' => $software,
 			'os' => (string) ($host_meta['os'] ?? ''),
 			'hardware' => (string) ($host_meta['hardware'] ?? ''),
@@ -456,6 +468,42 @@ class WidgetView extends CControllerDashboardWidgetView {
 			'avg_utilization' => $avg_util,
 			'peak_utilization' => $peak_util
 		];
+	}
+
+	private function isMaintenanceActive(array $host_meta): bool {
+		if ((int) ($host_meta['maintenance_status'] ?? 0) !== 1) {
+			return false;
+		}
+
+		$maintenanceid = trim((string) ($host_meta['maintenanceid'] ?? ''));
+		if ($maintenanceid === '' || $maintenanceid === '0') {
+			// Safety fallback: no maintenance id available, trust current host flag.
+			return true;
+		}
+
+		$rows = API::Maintenance()->get([
+			'output' => ['maintenanceid', 'active_since', 'active_till'],
+			'maintenanceids' => [$maintenanceid],
+			'limit' => 1
+		]);
+
+		if (!is_array($rows) || $rows === []) {
+			return false;
+		}
+
+		$row = $rows[0];
+		$active_since = (int) ($row['active_since'] ?? 0);
+		$active_till = (int) ($row['active_till'] ?? 0);
+		$now = time();
+
+		if ($active_till > 0 && $now >= $active_till) {
+			return false;
+		}
+		if ($active_since > 0 && $now < $active_since) {
+			return false;
+		}
+
+		return true;
 	}
 
 	private function resolveSwitchBrand(array $host_meta): string {
@@ -581,6 +629,18 @@ class WidgetView extends CControllerDashboardWidgetView {
 		}
 
 		if (is_scalar($value) && ctype_digit((string) $value) && (int) $value > 0) {
+			return (int) $value;
+		}
+
+		return 0;
+	}
+
+	private function extractNonNegativeInt($value): int {
+		if (is_array($value)) {
+			$value = reset($value);
+		}
+
+		if (is_scalar($value) && ctype_digit((string) $value)) {
 			return (int) $value;
 		}
 
