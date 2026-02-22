@@ -1914,7 +1914,6 @@
 			ensureBuildMarker();
 			addSaveButton();
 			hideInternalProfileFields();
-			applyPreset();
 			refreshNameEditor();
 
 		window.switch_widget_apply_preset_if_changed = () => {
