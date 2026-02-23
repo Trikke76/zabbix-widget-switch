@@ -42,6 +42,11 @@ If you change host, reopen widget edit to refresh trigger lists.
   - state/type/trigger text
   - IN/OUT sparkline + latest value (when user has item read permission)
 
+## Release Notes 1.2.7
+- Moved heatmap legend into the switch header to free vertical space above the switch.
+- Updated live panel label from `Utilization` to `Port utilization` for clarity.
+- Tightened live metric value alignment so IN/OUT/utilization values stay visually closer to their labels.
+
 ## Release Notes 1.2.6
 
 - Added integrated switch summary panel under the switch face.
