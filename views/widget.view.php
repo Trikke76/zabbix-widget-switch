@@ -1,13 +1,14 @@
 <?php declare(strict_types = 1);
 
 $css = implode('', [
-	'.port24-legend{display:inline-block;font-size:calc(var(--port24-legend-size,14px) * var(--port24-scale));line-height:1.35;color:#4b5563;',
-	'background:linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);border:1px solid #d7dee8;border-radius:6px;',
-	'padding:calc(6px * var(--port24-scale)) calc(10px * var(--port24-scale));margin-bottom:calc(10px * var(--port24-scale));}',
 	'.port24-switch{position:relative;background:linear-gradient(180deg,#5a6571 0%,#3d4651 22%,#2b323b 100%);',
 	'border:1px solid #212831;border-radius:10px;padding:calc(14px * var(--port24-scale));box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 16px rgba(0,0,0,.25);}',
 	'.port24-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:calc(8px * var(--port24-scale));color:#cfd8e2;font-size:calc(10px * var(--port24-scale));letter-spacing:.08em;text-transform:uppercase;}',
 	'.port24-brand{font-weight:700;}',
+	'.port24-head-right{display:flex;align-items:center;gap:calc(8px * var(--port24-scale));min-width:0;}',
+	'.port24-head-legend{display:inline-flex;align-items:center;max-width:min(54vw,620px);padding:calc(3px * var(--port24-scale)) calc(8px * var(--port24-scale));',
+	'font-size:calc(var(--port24-legend-size,14px) * var(--port24-scale));line-height:1.2;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;',
+	'border-radius:999px;border:1px solid rgba(203,213,225,.28);background:rgba(15,23,34,.22);color:#e5edf7;}',
 	'.port24-model{opacity:.9;}',
 	'.port24-face{display:flex;align-items:flex-start;gap:calc(16px * var(--port24-scale));}',
 	'.port24-main{flex:1 1 auto;min-width:0;}',
@@ -83,11 +84,10 @@ $css = implode('', [
 	'.port24-maintenance-badge.on{background:#f59e0b;color:#111827;border-color:#fbbf24;box-shadow:0 0 10px rgba(245,158,11,.45);}',
 	'.port24-summary-live-body{display:grid;grid-template-columns:minmax(220px,300px) minmax(220px,300px);gap:12px;align-items:start;max-width:620px;}',
 	'@media (max-width:860px){.port24-summary-live-body{grid-template-columns:1fr;}}',
-	'.port24-summary-live-row{display:grid;grid-template-columns:40px 150px 72px;align-items:center;justify-content:start;gap:8px;margin:4px 0;max-width:330px;}',
+	'.port24-summary-live-row{display:grid;grid-template-columns:58px 150px 72px;align-items:center;justify-content:start;gap:8px;margin:4px 0;max-width:360px;}',
 	'.port24-summary-live-spark{display:block;width:150px;height:36px;background:linear-gradient(180deg,rgba(90,101,113,.22) 0%,rgba(43,50,59,.34) 100%);border:1px solid rgba(168,184,202,.30);border-radius:4px;overflow:hidden;}',
+	'.port24-summary-live-spacer{display:block;width:150px;height:1px;}',
 	'.port24-summary-live-value{min-width:52px;text-align:right;font-variant-numeric:tabular-nums;color:#e5edf7;}',
-	'.port24-summary-live-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0;max-width:300px;}',
-	'.port24-summary-live-meta .port24-summary-k{white-space:nowrap;}',
 	'.port24-status-value{display:inline-flex;align-items:center;gap:6px;}',
 	'.port24-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;}',
 	'.port24-status-dot.ok{background:#22C55E;box-shadow:0 0 0 1px rgba(255,255,255,.25),0 0 8px rgba(34,197,94,.55);}',
@@ -101,13 +101,6 @@ $css = implode('', [
 $container = new CDiv();
 $scale = max(0.4, min(1.0, ((int) ($data['switch_size'] ?? 100)) / 100));
 $legend_size = max(12, min(18, (int) ($data['legend_size'] ?? 14)));
-if ($data['legend_text'] !== '') {
-	$container->addItem(
-		(new CDiv($data['legend_text']))
-			->addClass('port24-legend')
-			->setAttribute('style', '--port24-scale: '.$scale.'; --port24-legend-size: '.$legend_size.'px;')
-	);
-}
 
 if (!empty($data['access_denied'])) {
 	$container->addItem((new CDiv(_('Access denied: no permissions for selected host.')))->addClass('port24-denied'));
@@ -135,11 +128,20 @@ $util_high_threshold = (float) ($data['utilization_high_threshold'] ?? 70);
 $widget_uid = 'port24_'.str_replace('.', '_', uniqid('', true));
 $switch = (new CDiv())->addClass('port24-switch')
 	->setAttribute('id', $widget_uid)
-	->setAttribute('style', '--port24-scale: '.$scale.';');
+	->setAttribute('style', '--port24-scale: '.$scale.'; --port24-legend-size: '.$legend_size.'px;');
 $head = (new CDiv())->addClass('port24-head');
+$head_right = (new CDiv())->addClass('port24-head-right');
+if ($data['legend_text'] !== '') {
+	$head_right->addItem(
+		(new CSpan($data['legend_text']))
+			->addClass('port24-head-legend')
+			->setAttribute('title', $data['legend_text'])
+	);
+}
+$head_right->addItem((new CDiv($data['switch_model'] !== '' ? $data['switch_model'] : 'SW-24G'))->addClass('port24-model'));
 $head
 	->addItem((new CDiv($data['switch_brand'] !== '' ? $data['switch_brand'] : 'NETSWITCH'))->addClass('port24-brand'))
-	->addItem((new CDiv($data['switch_model'] !== '' ? $data['switch_model'] : 'SW-24G'))->addClass('port24-model'));
+	->addItem($head_right);
 $switch->addItem($head);
 $utp_ports = [];
 $sfp_ports = [];
@@ -700,8 +702,9 @@ $live = (new CDiv())->addClass('port24-summary-live')
 						)
 						->addItem(
 							(new CDiv())
-								->addClass('port24-summary-live-meta')
-								->addItem((new CSpan('Utilization'))->addClass('port24-summary-k'))
+								->addClass('port24-summary-live-row')
+								->addItem((new CSpan('Port utilization'))->addClass('port24-summary-k'))
+								->addItem((new CSpan(''))->addClass('port24-summary-live-spacer'))
 								->addItem((new CSpan('n/a'))->addClass('port24-summary-live-value')->setAttribute('data-live-util', '1'))
 						)
 				)

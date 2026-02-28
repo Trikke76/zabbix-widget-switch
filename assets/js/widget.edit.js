@@ -445,6 +445,22 @@
 			'.port24-modern-picker .port24-custom input{width:100%;background:#0f151d;color:#e5edf5;border:1px solid #354255;border-radius:6px;padding:6px 8px;}',
 			'.port24-modern-picker .port24-custom-actions{margin-top:8px;display:flex;justify-content:flex-end;}',
 			'.port24-modern-picker .port24-custom-apply{border:1px solid #3b82f6;background:#0f172a;color:#e2ecff;border-radius:6px;padding:4px 10px;cursor:pointer;}',
+			'.port24-modern-picker .port24-custom-harmony{margin-top:10px;border-top:1px solid #2d3746;padding-top:8px;}',
+			'.port24-modern-picker .port24-custom-harmony-title{font-size:11px;color:#9fb2c8;margin:0 0 6px 0;}',
+			'.port24-modern-picker .port24-custom-wheel{margin:0 0 10px 0;padding:0 0 10px 0;border-bottom:1px solid #2d3746;}',
+			'.port24-modern-picker .port24-custom-wheel-title{font-size:11px;color:#9fb2c8;margin:0 0 6px 0;}',
+			'.port24-modern-picker .port24-wheel-wrap{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:center;column-gap:10px;width:100%;}',
+			'.port24-modern-picker .port24-wheel{position:relative;width:96px;height:96px;min-width:96px;max-width:96px;min-height:96px;max-height:96px;flex:0 0 96px;aspect-ratio:1 / 1;border-radius:50%;border:1px solid #3a4655;background:conic-gradient(#FF0000,#FFFF00,#00FF00,#00FFFF,#0000FF,#FF00FF,#FF0000);cursor:crosshair;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25);}',
+			'.port24-modern-picker .port24-wheel-thumb{position:absolute;width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.55);pointer-events:none;transform:translate(-50%,-50%);}',
+			'.port24-modern-picker .port24-wheel-controls{min-width:0;width:100%;display:grid;row-gap:6px;}',
+			'.port24-modern-picker .port24-wheel-row{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:center;column-gap:6px;}',
+			'.port24-modern-picker .port24-wheel-row label{font-size:11px;color:#9fb2c8;}',
+			'.port24-modern-picker .port24-wheel-row input[type="range"]{display:block;width:100%;max-width:100%;min-width:0;margin:0;box-sizing:border-box;}',
+			'.port24-modern-picker .port24-harmony-modes{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px 0;}',
+			'.port24-modern-picker .port24-harmony-mode{border:1px solid #344154;background:#1b2430;color:#c9d5e2;border-radius:6px;padding:3px 7px;cursor:pointer;font-size:11px;}',
+			'.port24-modern-picker .port24-harmony-mode.is-active{background:#2e6f47;border-color:#3f8b5f;color:#fff;}',
+			'.port24-modern-picker .port24-harmony-grid{display:grid;grid-template-columns:repeat(6, minmax(0,1fr));gap:6px;}',
+			'.port24-modern-picker .port24-harmony-dot{appearance:none;-webkit-appearance:none;display:block;width:100%;height:20px;min-height:20px;box-sizing:border-box;border-radius:6px;border:1px solid rgba(255,255,255,.25);cursor:pointer;padding:0;margin:0;line-height:0;font-size:0;}',
 			'.port24-modern-picker .port24-custom.is-hidden,.port24-modern-picker .port24-colors.is-hidden{display:none;}',
 			'.port24-compact-main-grid{display:grid;grid-template-columns:repeat(2,max-content);gap:8px 20px;grid-column:1 / -1;align-items:start;justify-content:start;width:fit-content;max-width:100%;}',
 			'.port24-compact-main-pair{display:grid;grid-template-columns:1fr;row-gap:4px;align-items:start;}',
@@ -598,6 +614,64 @@
 		customActions.appendChild(customApply);
 		customWrap.appendChild(customActions);
 
+		const wheelWrap = document.createElement('div');
+		wheelWrap.className = 'port24-custom-wheel';
+		const wheelTitle = document.createElement('div');
+		wheelTitle.className = 'port24-custom-wheel-title';
+		wheelTitle.textContent = 'Wheel';
+		const wheelBody = document.createElement('div');
+		wheelBody.className = 'port24-wheel-wrap';
+		const wheel = document.createElement('div');
+		wheel.className = 'port24-wheel';
+		const wheelThumb = document.createElement('span');
+		wheelThumb.className = 'port24-wheel-thumb';
+		wheel.appendChild(wheelThumb);
+		const wheelControls = document.createElement('div');
+		wheelControls.className = 'port24-wheel-controls';
+		const satRow = document.createElement('div');
+		satRow.className = 'port24-wheel-row';
+		const satLabel = document.createElement('label');
+		satLabel.textContent = 'S';
+		const satRange = document.createElement('input');
+		satRange.type = 'range';
+		satRange.min = '0';
+		satRange.max = '100';
+		satRange.step = '1';
+		satRow.appendChild(satLabel);
+		satRow.appendChild(satRange);
+		const lightRow = document.createElement('div');
+		lightRow.className = 'port24-wheel-row';
+		const lightLabel = document.createElement('label');
+		lightLabel.textContent = 'L';
+		const lightRange = document.createElement('input');
+		lightRange.type = 'range';
+		lightRange.min = '0';
+		lightRange.max = '100';
+		lightRange.step = '1';
+		lightRow.appendChild(lightLabel);
+		lightRow.appendChild(lightRange);
+		wheelControls.appendChild(satRow);
+		wheelControls.appendChild(lightRow);
+		wheelBody.appendChild(wheel);
+		wheelBody.appendChild(wheelControls);
+		wheelWrap.appendChild(wheelTitle);
+		wheelWrap.appendChild(wheelBody);
+		customWrap.appendChild(wheelWrap);
+
+		const harmonyWrap = document.createElement('div');
+		harmonyWrap.className = 'port24-custom-harmony';
+		const harmonyTitle = document.createElement('div');
+		harmonyTitle.className = 'port24-custom-harmony-title';
+		harmonyTitle.textContent = 'Harmony';
+		const harmonyModes = document.createElement('div');
+		harmonyModes.className = 'port24-harmony-modes';
+		const harmonyGrid = document.createElement('div');
+		harmonyGrid.className = 'port24-harmony-grid';
+		harmonyWrap.appendChild(harmonyTitle);
+		harmonyWrap.appendChild(harmonyModes);
+		harmonyWrap.appendChild(harmonyGrid);
+		customWrap.appendChild(harmonyWrap);
+
 		pop.appendChild(tabs);
 		pop.appendChild(colorsWrap);
 		pop.appendChild(customWrap);
@@ -605,11 +679,217 @@
 		root.appendChild(pop);
 
 		let value = normalizeHexColor(initialColor, '#D1D5DB');
+		let selectedHarmonyMode = 'analog';
+		let currentHsl = null;
+
+		const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+		const round = (n) => Math.round(n);
+		const wrapDeg = (deg) => {
+			let v = deg % 360;
+			if (v < 0) {
+				v += 360;
+			}
+			return v;
+		};
+		const hexToRgb = (hex) => {
+			const normalized = normalizeHexColor(hex, '#D1D5DB');
+			const raw = normalized.slice(1);
+			return {
+				r: parseInt(raw.slice(0, 2), 16),
+				g: parseInt(raw.slice(2, 4), 16),
+				b: parseInt(raw.slice(4, 6), 16)
+			};
+		};
+		const rgbToHex = (rgb) => {
+			const toHex = (v) => clamp(round(v), 0, 255).toString(16).padStart(2, '0').toUpperCase();
+			return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`;
+		};
+		const rgbToHsl = (rgb) => {
+			const r = rgb.r / 255;
+			const g = rgb.g / 255;
+			const b = rgb.b / 255;
+			const max = Math.max(r, g, b);
+			const min = Math.min(r, g, b);
+			const delta = max - min;
+			let h = 0;
+			const l = (max + min) / 2;
+			let s = 0;
+			if (delta !== 0) {
+				s = delta / (1 - Math.abs(2 * l - 1));
+				switch (max) {
+					case r:
+						h = 60 * (((g - b) / delta) % 6);
+						break;
+					case g:
+						h = 60 * (((b - r) / delta) + 2);
+						break;
+					default:
+						h = 60 * (((r - g) / delta) + 4);
+						break;
+				}
+			}
+			return {
+				h: wrapDeg(h),
+				s: clamp(s * 100, 0, 100),
+				l: clamp(l * 100, 0, 100)
+			};
+		};
+		const hslToRgb = (hsl) => {
+			const h = wrapDeg(hsl.h) / 360;
+			const s = clamp(hsl.s, 0, 100) / 100;
+			const l = clamp(hsl.l, 0, 100) / 100;
+			if (s === 0) {
+				const v = round(l * 255);
+				return {r: v, g: v, b: v};
+			}
+			const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+			const p = 2 * l - q;
+			const hue2rgb = (t) => {
+				let tt = t;
+				if (tt < 0) {
+					tt += 1;
+				}
+				if (tt > 1) {
+					tt -= 1;
+				}
+				if (tt < 1 / 6) {
+					return p + (q - p) * 6 * tt;
+				}
+				if (tt < 1 / 2) {
+					return q;
+				}
+				if (tt < 2 / 3) {
+					return p + (q - p) * (2 / 3 - tt) * 6;
+				}
+				return p;
+			};
+			return {
+				r: round(hue2rgb(h + 1 / 3) * 255),
+				g: round(hue2rgb(h) * 255),
+				b: round(hue2rgb(h - 1 / 3) * 255)
+			};
+		};
+		const buildHarmonyColors = (baseHex, mode) => {
+			const baseHsl = rgbToHsl(hexToRgb(baseHex));
+			const withHsl = (hShift = 0, sShift = 0, lShift = 0) => rgbToHex(hslToRgb({
+				h: wrapDeg(baseHsl.h + hShift),
+				s: clamp(baseHsl.s + sShift, 12, 95),
+				l: clamp(baseHsl.l + lShift, 8, 92)
+			}));
+			switch (mode) {
+				case 'mono':
+					return [-22, -12, -4, 8, 16, 24].map((lShift) => withHsl(0, 0, lShift));
+				case 'complement':
+					return [
+						withHsl(0, 8, -10),
+						withHsl(0, 0, 8),
+						withHsl(0, -6, 20),
+						withHsl(180, 8, -10),
+						withHsl(180, 0, 8),
+						withHsl(180, -6, 20)
+					];
+				case 'split':
+					return [
+						withHsl(0, 8, -8),
+						withHsl(0, -4, 10),
+						withHsl(150, 0, 0),
+						withHsl(150, -8, 14),
+						withHsl(210, 0, 0),
+						withHsl(210, -8, 14)
+					];
+				case 'triad':
+					return [
+						withHsl(0, 6, -8),
+						withHsl(0, -4, 12),
+						withHsl(120, 4, -4),
+						withHsl(120, -8, 12),
+						withHsl(240, 4, -4),
+						withHsl(240, -8, 12)
+					];
+				default:
+					return [
+						withHsl(-28, 4, 0),
+						withHsl(-14, 2, 6),
+						withHsl(0, 0, 0),
+						withHsl(14, 2, 6),
+						withHsl(28, 4, 0),
+						withHsl(42, 0, 10)
+					];
+			}
+		};
+		const renderHarmonyGrid = () => {
+			harmonyGrid.innerHTML = '';
+			const colors = buildHarmonyColors(value, selectedHarmonyMode);
+			for (const color of colors) {
+				const dot = document.createElement('button');
+				dot.type = 'button';
+				dot.className = 'port24-harmony-dot';
+				dot.style.background = color;
+				dot.title = color;
+				dot.addEventListener('click', () => {
+					setValue(color);
+				});
+				harmonyGrid.appendChild(dot);
+			}
+		};
+		const updateWheelThumb = () => {
+			if (!currentHsl) {
+				return;
+			}
+			const radius = 48;
+			const angle = (currentHsl.h * Math.PI) / 180;
+			const dist = (clamp(currentHsl.s, 0, 100) / 100) * radius;
+			const x = 48 + (Math.cos(angle) * dist);
+			const y = 48 + (Math.sin(angle) * dist);
+			wheelThumb.style.left = `${x}px`;
+			wheelThumb.style.top = `${y}px`;
+			satRange.value = String(round(clamp(currentHsl.s, 0, 100)));
+			lightRange.value = String(round(clamp(currentHsl.l, 0, 100)));
+		};
+		const setFromHsl = (hsl, emit = true) => {
+			currentHsl = {
+				h: wrapDeg(hsl.h),
+				s: clamp(hsl.s, 0, 100),
+				l: clamp(hsl.l, 0, 100)
+			};
+			value = rgbToHex(hslToRgb(currentHsl));
+			swatch.style.background = value;
+			customInput.value = value;
+			renderHarmonyGrid();
+			updateWheelThumb();
+			if (emit) {
+				root.dispatchEvent(new CustomEvent('port24-color-change', {
+					detail: {value}
+				}));
+			}
+		};
+		const addHarmonyMode = (key, label) => {
+			const modeBtn = document.createElement('button');
+			modeBtn.type = 'button';
+			modeBtn.className = `port24-harmony-mode${key === selectedHarmonyMode ? ' is-active' : ''}`;
+			modeBtn.textContent = label;
+			modeBtn.addEventListener('click', () => {
+				selectedHarmonyMode = key;
+				for (const el of harmonyModes.querySelectorAll('.port24-harmony-mode')) {
+					el.classList.toggle('is-active', el === modeBtn);
+				}
+				renderHarmonyGrid();
+			});
+			harmonyModes.appendChild(modeBtn);
+		};
+		addHarmonyMode('analog', 'Analog');
+		addHarmonyMode('mono', 'Mono');
+		addHarmonyMode('complement', 'Complement');
+		addHarmonyMode('split', 'Split');
+		addHarmonyMode('triad', 'Triad');
 
 		const setValue = (color, emit = true) => {
 			value = normalizeHexColor(color, value);
+			currentHsl = rgbToHsl(hexToRgb(value));
 			swatch.style.background = value;
 			customInput.value = value;
+			renderHarmonyGrid();
+			updateWheelThumb();
 			if (emit) {
 				root.dispatchEvent(new CustomEvent('port24-color-change', {
 					detail: {value}
@@ -665,6 +945,60 @@
 		customApply.addEventListener('click', () => {
 			setValue(customInput.value);
 			pop.classList.add('is-hidden');
+		});
+		satRange.addEventListener('input', () => {
+			if (!currentHsl) {
+				currentHsl = rgbToHsl(hexToRgb(value));
+			}
+			setFromHsl({
+				h: currentHsl.h,
+				s: Number(satRange.value || 0),
+				l: currentHsl.l
+			});
+		});
+		lightRange.addEventListener('input', () => {
+			if (!currentHsl) {
+				currentHsl = rgbToHsl(hexToRgb(value));
+			}
+			setFromHsl({
+				h: currentHsl.h,
+				s: currentHsl.s,
+				l: Number(lightRange.value || 0)
+			});
+		});
+		const applyHueFromPointer = (event) => {
+			const rect = wheel.getBoundingClientRect();
+			const cx = rect.left + (rect.width / 2);
+			const cy = rect.top + (rect.height / 2);
+			const dx = event.clientX - cx;
+			const dy = event.clientY - cy;
+			const angleRad = Math.atan2(dy, dx);
+			const hue = wrapDeg((angleRad * 180) / Math.PI);
+			const radius = rect.width / 2;
+			const dist = Math.min(radius, Math.sqrt((dx * dx) + (dy * dy)));
+			const satFromWheel = clamp((dist / radius) * 100, 0, 100);
+			if (!currentHsl) {
+				currentHsl = rgbToHsl(hexToRgb(value));
+			}
+			setFromHsl({
+				h: hue,
+				s: satFromWheel,
+				l: currentHsl.l
+			});
+		};
+		let wheelDragging = false;
+		wheel.addEventListener('mousedown', (event) => {
+			wheelDragging = true;
+			applyHueFromPointer(event);
+		});
+		document.addEventListener('mousemove', (event) => {
+			if (!wheelDragging) {
+				return;
+			}
+			applyHueFromPointer(event);
+		});
+		document.addEventListener('mouseup', () => {
+			wheelDragging = false;
 		});
 
 		button.addEventListener('click', () => {

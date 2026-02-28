@@ -11,6 +11,7 @@ foreach (array_keys($data['fields']) as $field_name) {
 
 $form->addField(new CWidgetFieldMultiSelectHostView($data['fields']['hostids']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['legend_text']));
+$form->addField(new CWidgetFieldSelectView($data['fields']['legend_size']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['traffic_in_item_pattern']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['traffic_out_item_pattern']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['traffic_unit_mode']));
@@ -35,7 +36,6 @@ $form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_low_col
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_warn_color']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_high_color']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_na_color']));
-$form->addField(new CWidgetFieldSelectView($data['fields']['legend_size']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['preset']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_model']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['switch_size']));
