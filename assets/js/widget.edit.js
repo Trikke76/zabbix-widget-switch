@@ -115,6 +115,21 @@
 		}
 	}
 
+	function getZabbixPhpUrl() {
+		const form = document.getElementById('widget-dialogue-form');
+		if (form && form.action) {
+			const url = new URL(form.action, window.location.href);
+			url.search = '';
+			url.hash = '';
+			return url;
+		}
+
+		const current = new URL(window.location.href);
+		current.search = '';
+		current.hash = '';
+		return current;
+	}
+
 	function getColorFields() {
 		const fields = [];
 		const seen = new Set();
@@ -2483,7 +2498,7 @@
 	}
 
 	function fetchItemSuggestions(hostid, query, signal) {
-		const url = new URL('zabbix.php', window.location.origin);
+		const url = getZabbixPhpUrl();
 		url.searchParams.set('action', 'widget.switch.items');
 		url.searchParams.set('output', 'ajax');
 		url.searchParams.set('hostid', hostid);
@@ -2805,7 +2820,7 @@
 	}
 
 	function fetchTriggers(hostid) {
-		const url = new URL('zabbix.php', window.location.origin);
+		const url = getZabbixPhpUrl();
 		url.searchParams.set('action', 'widget.switch.triggers');
 		url.searchParams.set('output', 'ajax');
 		url.searchParams.set('hostid', hostid);
