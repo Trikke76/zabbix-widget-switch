@@ -252,7 +252,7 @@
 				'Fan item key',
 				'Uptime item key',
 				'Serial item key'
-			], 40, 40);
+			], 60, 60);
 			enforceTextFieldsByLabels(['Brand', 'Model'], 30, 30);
 			enforceTextFieldsByLabels(['Size (%)', 'Rows', 'Ports per row', 'SFP ports'], 6, 4, {numericOnly: true});
 			enforceTextFieldsByLabels(['Port index start', 'SFP index start (optional)'], 8, 6, {numericOnly: true});
