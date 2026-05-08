@@ -31,6 +31,9 @@ class WidgetView extends CControllerDashboardWidgetView {
 	private const MAX_PORTS_PER_ROW = 48;
 	private const MAX_SFP_PORTS = 32;
 	private const MAX_TOTAL_PORTS = 96;
+	private const MAX_INTERFACE_INDEX = 2147483647;
+
+	private array $host_item_keys_cache = [];
 	protected function doAction(): void {
 		$layout = $this->getLayout();
 		$hostid = $this->extractHostId();
@@ -39,12 +42,12 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$port_index_start = $this->clamp(
 			$this->extractNonNegativeInt($this->fields_values['port_index_start'] ?? self::DEFAULT_PORT_INDEX_START),
 			0,
-			100000
+			self::MAX_INTERFACE_INDEX
 		);
 		$sfp_index_start = $this->clamp(
 			$this->extractNonNegativeInt($this->fields_values['sfp_index_start'] ?? self::DEFAULT_SFP_INDEX_START),
 			0,
-			100000
+			self::MAX_INTERFACE_INDEX
 		);
 		$traffic_unit_mode = ((int) ($this->fields_values['traffic_unit_mode'] ?? self::TRAFFIC_UNIT_BYTES)) === self::TRAFFIC_UNIT_BITS
 			? self::TRAFFIC_UNIT_BITS
@@ -165,6 +168,22 @@ class WidgetView extends CControllerDashboardWidgetView {
 
 		$trigger_meta = $this->loadTriggerMeta($ports);
 		$sfp_start_index = max(1, $layout['total_ports'] - $layout['sfp_ports'] + 1);
+		$wildcard_key_plans = $this->buildWildcardKeyPlans(
+			$hostid,
+			[
+				'traffic_in_item_key' => $traffic_in_pattern,
+				'traffic_out_item_key' => $traffic_out_pattern,
+				'speed_item_key' => $speed_pattern,
+				'speed_item_key_alt' => $speed_pattern_alt,
+				'in_errors_item_key' => $in_errors_pattern,
+				'out_errors_item_key' => $out_errors_pattern,
+				'in_discards_item_key' => $in_discards_pattern,
+				'out_discards_item_key' => $out_discards_pattern
+			],
+			$layout,
+			$port_index_start,
+			$sfp_index_start
+		);
 
 		foreach ($ports as $index => &$port) {
 			$port['is_sfp'] = ($layout['sfp_ports'] > 0 && ($index + 1) >= $sfp_start_index);
@@ -185,14 +204,66 @@ class WidgetView extends CControllerDashboardWidgetView {
 				: '';
 			$port['trigger_name'] = $meta !== null ? $meta['description'] : '';
 			$port['hostid'] = $hostid;
-			$port['traffic_in_item_key'] = $this->resolvePortItemKey($traffic_in_pattern, $mapped_port_index);
-			$port['traffic_out_item_key'] = $this->resolvePortItemKey($traffic_out_pattern, $mapped_port_index);
-			$port['speed_item_key'] = $this->resolvePortItemKey($speed_pattern, $mapped_port_index);
-			$port['speed_item_key_alt'] = $this->resolvePortItemKey($speed_pattern_alt, $mapped_port_index);
-			$port['in_errors_item_key'] = $this->resolvePortItemKey($in_errors_pattern, $mapped_port_index);
-			$port['out_errors_item_key'] = $this->resolvePortItemKey($out_errors_pattern, $mapped_port_index);
-			$port['in_discards_item_key'] = $this->resolvePortItemKey($in_discards_pattern, $mapped_port_index);
-			$port['out_discards_item_key'] = $this->resolvePortItemKey($out_discards_pattern, $mapped_port_index);
+			$port_position = $port['is_sfp']
+				? (($index + 1) - $sfp_start_index)
+				: $index;
+			$port_group = $port['is_sfp'] ? 'sfp' : 'regular';
+			$port['traffic_in_item_key'] = $this->resolvePortItemKey(
+				$traffic_in_pattern,
+				$mapped_port_index,
+				$wildcard_key_plans['traffic_in_item_key'] ?? [],
+				$port_group,
+				$port_position
+			);
+			$port['traffic_out_item_key'] = $this->resolvePortItemKey(
+				$traffic_out_pattern,
+				$mapped_port_index,
+				$wildcard_key_plans['traffic_out_item_key'] ?? [],
+				$port_group,
+				$port_position
+			);
+			$port['speed_item_key'] = $this->resolvePortItemKey(
+				$speed_pattern,
+				$mapped_port_index,
+				$wildcard_key_plans['speed_item_key'] ?? [],
+				$port_group,
+				$port_position
+			);
+			$port['speed_item_key_alt'] = $this->resolvePortItemKey(
+				$speed_pattern_alt,
+				$mapped_port_index,
+				$wildcard_key_plans['speed_item_key_alt'] ?? [],
+				$port_group,
+				$port_position
+			);
+			$port['in_errors_item_key'] = $this->resolvePortItemKey(
+				$in_errors_pattern,
+				$mapped_port_index,
+				$wildcard_key_plans['in_errors_item_key'] ?? [],
+				$port_group,
+				$port_position
+			);
+			$port['out_errors_item_key'] = $this->resolvePortItemKey(
+				$out_errors_pattern,
+				$mapped_port_index,
+				$wildcard_key_plans['out_errors_item_key'] ?? [],
+				$port_group,
+				$port_position
+			);
+			$port['in_discards_item_key'] = $this->resolvePortItemKey(
+				$in_discards_pattern,
+				$mapped_port_index,
+				$wildcard_key_plans['in_discards_item_key'] ?? [],
+				$port_group,
+				$port_position
+			);
+			$port['out_discards_item_key'] = $this->resolvePortItemKey(
+				$out_discards_pattern,
+				$mapped_port_index,
+				$wildcard_key_plans['out_discards_item_key'] ?? [],
+				$port_group,
+				$port_position
+			);
 		}
 		unset($port);
 		$traffic_series = $this->loadTrafficSeries($hostid, $ports);
@@ -716,12 +787,157 @@ class WidgetView extends CControllerDashboardWidgetView {
 		return $pattern;
 	}
 
-	private function resolvePortItemKey(string $pattern, int $port_index): string {
+	private function resolvePortItemKey(
+		string $pattern,
+		int $port_index,
+		array $wildcard_plan = [],
+		string $port_group = 'regular',
+		int $port_position = 0
+	): string {
+		if ($wildcard_plan !== []) {
+			$planned_keys = $wildcard_plan[$port_group] ?? [];
+			if (array_key_exists($port_position, $planned_keys)) {
+				return (string) $planned_keys[$port_position];
+			}
+		}
+
 		if (strpos($pattern, '*') !== false) {
 			return str_replace('*', (string) $port_index, $pattern);
 		}
 
 		return $pattern;
+	}
+
+	private function buildWildcardKeyPlans(
+		string $hostid,
+		array $patterns,
+		array $layout,
+		int $port_index_start,
+		int $sfp_index_start
+	): array {
+		if ($hostid === '') {
+			return [];
+		}
+
+		$regular_port_count = max(0, (int) $layout['total_ports'] - (int) $layout['sfp_ports']);
+		$sfp_port_count = max(0, (int) $layout['sfp_ports']);
+		$result = [];
+
+		foreach ($patterns as $key => $pattern) {
+			if (strpos($pattern, '*') === false) {
+				continue;
+			}
+
+			$result[$key] = $this->buildWildcardKeyPlan(
+				$hostid,
+				(string) $pattern,
+				$regular_port_count,
+				$sfp_port_count,
+				$port_index_start,
+				$sfp_index_start
+			);
+		}
+
+		return $result;
+	}
+
+	private function buildWildcardKeyPlan(
+		string $hostid,
+		string $pattern,
+		int $regular_port_count,
+		int $sfp_port_count,
+		int $port_index_start,
+		int $sfp_index_start
+	): array {
+		$matches = $this->findWildcardMatchingItemKeys($hostid, $pattern);
+		if ($matches === []) {
+			return [];
+		}
+
+		$regular_candidates = [];
+		$sfp_candidates = [];
+
+		foreach ($matches as $index => $key) {
+			if ($index < $port_index_start) {
+				continue;
+			}
+
+			if ($sfp_port_count > 0 && $sfp_index_start > 0 && $index >= $sfp_index_start) {
+				$sfp_candidates[] = $key;
+				continue;
+			}
+
+			$regular_candidates[] = $key;
+		}
+
+		$regular_keys = array_slice($regular_candidates, 0, $regular_port_count);
+		if ($sfp_port_count > 0) {
+			if ($sfp_index_start > 0) {
+				$sfp_keys = array_slice($sfp_candidates, 0, $sfp_port_count);
+			}
+			else {
+				$sfp_keys = array_slice($regular_candidates, $regular_port_count, $sfp_port_count);
+			}
+		}
+		else {
+			$sfp_keys = [];
+		}
+
+		return [
+			'regular' => array_values($regular_keys),
+			'sfp' => array_values($sfp_keys)
+		];
+	}
+
+	private function findWildcardMatchingItemKeys(string $hostid, string $pattern): array {
+		$star_pos = strpos($pattern, '*');
+		if ($star_pos === false) {
+			return [];
+		}
+
+		$prefix = substr($pattern, 0, $star_pos);
+		$suffix = substr($pattern, $star_pos + 1);
+		$regex = '/^'.preg_quote($prefix, '/').'(-?\d+)'.preg_quote($suffix, '/').'$/';
+		$result = [];
+
+		foreach ($this->loadHostItemKeys($hostid) as $key) {
+			if (preg_match($regex, $key, $matches) !== 1) {
+				continue;
+			}
+
+			$result[(int) $matches[1]] = $key;
+		}
+
+		if ($result === []) {
+			return [];
+		}
+
+		ksort($result, SORT_NUMERIC);
+
+		return $result;
+	}
+
+	private function loadHostItemKeys(string $hostid): array {
+		if (array_key_exists($hostid, $this->host_item_keys_cache)) {
+			return $this->host_item_keys_cache[$hostid];
+		}
+
+		$rows = API::Item()->get([
+			'output' => ['key_'],
+			'hostids' => [$hostid]
+		]);
+
+		$keys = [];
+		foreach ($rows as $row) {
+			$key = (string) ($row['key_'] ?? '');
+			if ($key !== '') {
+				$keys[] = $key;
+			}
+		}
+
+		$this->host_item_keys_cache[$hostid] = $keys;
+
+		return $keys;
 	}
 
 	private function loadTrafficSeries(string $hostid, array $ports): array {
