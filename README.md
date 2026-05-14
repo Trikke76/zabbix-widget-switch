@@ -47,6 +47,9 @@ If you change host, reopen widget edit to refresh trigger lists.
 - Updated live panel label from `Utilization` to `Port utilization` for clarity.
 - Tightened live metric value alignment so IN/OUT/utilization values stay visually closer to their labels.
 
+## Release Notes 1.2.9
+- Marked the widget as available for template dashboards in `manifest.json`.
+
 ## Release Notes 1.2.6
 
 - Added integrated switch summary panel under the switch face.
