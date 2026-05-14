@@ -8,7 +8,7 @@ Uses native Zabbix selection fields.
 
 ## Configure
 
-1. Select global `Host` (selection box style).
+1. Set `Override host` to a host, or leave it linked to the dashboard/template context.
 2. Set `Rows` and `Ports per row` (total ports = rows x ports per row).
 3. Set optional `Brand` and `Model` text for switch bezel.
 4. Set widget `Name` to control the dashboard widget title (header text).
@@ -29,6 +29,7 @@ Uses native Zabbix selection fields.
 
 Note: Trigger options are rendered server-side from selected host.
 If you change host, reopen widget edit to refresh trigger lists.
+On template dashboards, the linked host is used automatically.
 
 ## UI
 

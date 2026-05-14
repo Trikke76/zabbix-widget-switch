@@ -36,7 +36,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 	private array $host_item_keys_cache = [];
 	protected function doAction(): void {
 		$layout = $this->getLayout();
-		$hostid = $this->extractHostId();
+		$host = $this->getResolvedHost();
+		$hostid = $host !== null ? (string) ($host['hostid'] ?? '') : $this->extractHostId();
 		$traffic_in_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['traffic_in_item_pattern'] ?? self::DEFAULT_TRAFFIC_IN_PATTERN), self::DEFAULT_TRAFFIC_IN_PATTERN);
 		$traffic_out_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['traffic_out_item_pattern'] ?? self::DEFAULT_TRAFFIC_OUT_PATTERN), self::DEFAULT_TRAFFIC_OUT_PATTERN);
 		$port_index_start = $this->clamp(
@@ -141,6 +142,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'utilization_high_color' => $util_high_color,
 				'utilization_na_color' => $util_na_color,
 				'hostid' => $hostid,
+				'host' => $host_meta,
+				'host_link' => $hostid !== '' ? 'zabbix.php?action=host.view&hostid='.$hostid : '',
 				'legend_size' => $this->clamp(
 					$this->extractPositiveInt($this->fields_values['legend_size'] ?? 14),
 					12,
@@ -411,6 +414,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'utilization_high_color' => $util_high_color,
 				'utilization_na_color' => $util_na_color,
 				'hostid' => $hostid,
+				'host' => $host_meta,
+				'host_link' => $hostid !== '' ? 'zabbix.php?action=host.view&hostid='.$hostid : '',
 				'legend_size' => $this->clamp(
 					$this->extractPositiveInt($this->fields_values['legend_size'] ?? 14),
 					12,
@@ -1405,9 +1410,39 @@ class WidgetView extends CControllerDashboardWidgetView {
 	}
 
 	private function extractHostId(): string {
-		$value = $this->fields_values['hostids'] ?? [];
-		$candidates = $this->collectPositiveNumericScalars($value);
-		return $candidates !== [] ? (string) $candidates[0] : '';
+		$host = $this->getResolvedHost();
+		if ($host !== null) {
+			$hostid = trim((string) ($host['hostid'] ?? ''));
+			if ($hostid !== '') {
+				return $hostid;
+			}
+		}
+
+		foreach (['override_hostid', 'hostids'] as $field_name) {
+			if (!array_key_exists($field_name, $this->fields_values)) {
+				continue;
+			}
+
+			$candidates = $this->collectPositiveNumericScalars($this->fields_values[$field_name]);
+			if ($candidates !== []) {
+				return (string) $candidates[0];
+			}
+		}
+
+		return '';
+	}
+
+	private function getResolvedHost(): ?array {
+		if (!method_exists($this, 'getHost')) {
+			return null;
+		}
+
+		$host = $this->getHost();
+		if (!is_array($host) || $host === []) {
+			return null;
+		}
+
+		return $host;
 	}
 
 	private function collectPositiveNumericScalars($value): array {

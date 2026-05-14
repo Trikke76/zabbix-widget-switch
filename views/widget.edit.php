@@ -9,7 +9,10 @@ foreach (array_keys($data['fields']) as $field_name) {
 	}
 }
 
-$form->addField(new CWidgetFieldMultiSelectHostView($data['fields']['hostids']));
+$form->addField(($data['templateid'] ?? null) === null
+	? new CWidgetFieldMultiSelectOverrideHostView($data['fields']['override_hostid'])
+	: null
+);
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['legend_text']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['legend_size']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['traffic_in_item_pattern']));

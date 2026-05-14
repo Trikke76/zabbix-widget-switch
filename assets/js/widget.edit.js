@@ -33,6 +33,15 @@
 
 	function getHostId() {
 		const selectors = [
+			'input[name="fields[override_hostid][]"]',
+			'input[name^="fields[override_hostid]["]',
+			'input[name="override_hostid[]"]',
+			'input[name^="override_hostid["]',
+			'input[name*="override_hostid"]',
+			'#override_hostid input[type="hidden"]',
+			'#override_hostid_ms input[type="hidden"]',
+			'[id^="override_hostid"] input[type="hidden"]',
+			'[data-name="override_hostid"] input[type="hidden"]',
 			'input[name="fields[hostids][]"]',
 			'input[name^="fields[hostids]["]',
 			'input[name="hostids[]"]',
@@ -55,6 +64,9 @@
 
 		// Fallback: read selected token id in Zabbix multiselect chip list.
 		const tokenSelectors = [
+			'#override_hostid_ms [data-id]',
+			'[id^="override_hostid"] [data-id]',
+			'[data-name="override_hostid"] [data-id]',
 			'#hostids_ms [data-id]',
 			'[id^="hostids"] [data-id]',
 			'[data-name="hostids"] [data-id]'

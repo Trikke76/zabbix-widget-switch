@@ -3,7 +3,7 @@
 namespace Modules\SwitchWidget\Includes;
 
 use Zabbix\Widgets\CWidgetForm;
-use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectHost;
+use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectOverrideHost;
 use Zabbix\Widgets\Fields\CWidgetFieldSelect;
 use Zabbix\Widgets\Fields\CWidgetFieldTextBox;
 
@@ -29,7 +29,7 @@ class WidgetForm extends CWidgetForm {
 		$profile_defaults = $this->loadProfileDefaults();
 
 		$this->addField(
-			(new CWidgetFieldMultiSelectHost('hostids', _('Host')))
+			(new CWidgetFieldMultiSelectOverrideHost('override_hostid', _('Override host')))
 				->setMultiple(false)
 		);
 

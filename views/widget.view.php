@@ -6,6 +6,9 @@ $css = implode('', [
 	'.port24-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:calc(8px * var(--port24-scale));color:#cfd8e2;font-size:calc(10px * var(--port24-scale));letter-spacing:.08em;text-transform:uppercase;}',
 	'.port24-brand{font-weight:700;}',
 	'.port24-head-right{display:flex;align-items:center;gap:calc(8px * var(--port24-scale));min-width:0;}',
+	'.port24-host{display:inline-flex;align-items:center;max-width:min(34vw,320px);padding:calc(2px * var(--port24-scale)) calc(8px * var(--port24-scale));',
+	'border-radius:999px;border:1px solid rgba(203,213,225,.28);background:rgba(15,23,34,.22);color:#e5edf7;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+	'.port24-host:hover{border-color:#93c5fd;color:#fff;}',
 	'.port24-head-legend{display:inline-flex;align-items:center;max-width:min(54vw,620px);padding:calc(3px * var(--port24-scale)) calc(8px * var(--port24-scale));',
 	'font-size:calc(var(--port24-legend-size,14px) * var(--port24-scale));line-height:1.2;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;',
 	'border-radius:999px;border:1px solid rgba(203,213,225,.28);background:rgba(15,23,34,.22);color:#e5edf7;}',
@@ -136,6 +139,13 @@ if ($data['legend_text'] !== '') {
 		(new CSpan($data['legend_text']))
 			->addClass('port24-head-legend')
 			->setAttribute('title', $data['legend_text'])
+	);
+}
+if (!empty($data['host_link']) && !empty($data['host']['display_name'])) {
+	$head_right->addItem(
+		(new CLink($data['host']['display_name'], $data['host_link']))
+			->addClass('port24-host')
+			->setAttribute('title', $data['host']['display_name'])
 	);
 }
 $head_right->addItem((new CDiv($data['switch_model'] !== '' ? $data['switch_model'] : 'SW-24G'))->addClass('port24-model'));
