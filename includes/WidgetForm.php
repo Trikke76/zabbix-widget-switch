@@ -3,7 +3,7 @@
 namespace Modules\SwitchWidget\Includes;
 
 use Zabbix\Widgets\CWidgetForm;
-use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectOverrideHost;
+use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectHost;
 use Zabbix\Widgets\Fields\CWidgetFieldSelect;
 use Zabbix\Widgets\Fields\CWidgetFieldTextBox;
 
@@ -29,7 +29,7 @@ class WidgetForm extends CWidgetForm {
 		$profile_defaults = $this->loadProfileDefaults();
 
 		$this->addField(
-			(new CWidgetFieldMultiSelectOverrideHost('override_hostid', _('Override host')))
+			(new CWidgetFieldMultiSelectHost('hostids', _('Host')))
 				->setMultiple(false)
 		);
 
@@ -108,6 +108,12 @@ class WidgetForm extends CWidgetForm {
 		$this->addField(
 			(new CWidgetFieldTextBox('speed_item_pattern', _('Speed item pattern')))
 				->setDefault(self::DEFAULT_SPEED_PATTERN)
+		);
+		$this->addField(
+			(new CWidgetFieldSelect('speed_unit_mode', _('Speed data unit'), [
+				0 => _('Mbps (×1,000,000 → b/s)'),
+				1 => _('b/s (bits per second)')
+			]))->setDefault(0)
 		);
 		$this->addField(
 			(new CWidgetFieldTextBox('utilization_low_threshold', _('Utilization low threshold (%)')))

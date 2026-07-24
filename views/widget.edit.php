@@ -10,7 +10,7 @@ foreach (array_keys($data['fields']) as $field_name) {
 }
 
 $form->addField(($data['templateid'] ?? null) === null
-	? new CWidgetFieldMultiSelectOverrideHostView($data['fields']['override_hostid'])
+	? new CWidgetFieldMultiSelectHostView($data['fields']['hostids'])
 	: null
 );
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['legend_text']));
@@ -32,6 +32,7 @@ $form->addField(new CWidgetFieldTextBoxView($data['fields']['summary_uptime_item
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['summary_serial_item_key']));
 $form->addField(new CWidgetFieldSelectView($data['fields']['utilization_overlay_enabled']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['speed_item_pattern']));
+$form->addField(new CWidgetFieldSelectView($data['fields']['speed_unit_mode']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_low_threshold']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_warn_threshold']));
 $form->addField(new CWidgetFieldTextBoxView($data['fields']['utilization_high_threshold']));

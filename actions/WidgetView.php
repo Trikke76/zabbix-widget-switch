@@ -20,6 +20,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 	private const DEFAULT_OUT_DISCARDS_PATTERN = 'ifOutDiscards[*]';
 	private const TRAFFIC_UNIT_BYTES = 0;
 	private const TRAFFIC_UNIT_BITS = 1;
+	private const SPEED_UNIT_MBPS = 0;
+	private const SPEED_UNIT_BITS = 1;
 	private const MAX_SPEED_PATTERN_LENGTH = 40;
 	private const TRAFFIC_POINTS = 24;
 	private const TRAFFIC_LOOKBACK_SECONDS = 1800;
@@ -53,6 +55,9 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$traffic_unit_mode = ((int) ($this->fields_values['traffic_unit_mode'] ?? self::TRAFFIC_UNIT_BYTES)) === self::TRAFFIC_UNIT_BITS
 			? self::TRAFFIC_UNIT_BITS
 			: self::TRAFFIC_UNIT_BYTES;
+		$speed_unit_mode = ((int) ($this->fields_values['speed_unit_mode'] ?? self::SPEED_UNIT_MBPS)) === self::SPEED_UNIT_BITS
+			? self::SPEED_UNIT_BITS
+			: self::SPEED_UNIT_MBPS;
 		$speed_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['speed_item_pattern'] ?? self::DEFAULT_SPEED_PATTERN), self::DEFAULT_SPEED_PATTERN);
 		$in_errors_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['in_errors_item_pattern'] ?? self::DEFAULT_IN_ERRORS_PATTERN), self::DEFAULT_IN_ERRORS_PATTERN);
 		$out_errors_pattern = $this->sanitizeItemPattern((string) ($this->fields_values['out_errors_item_pattern'] ?? self::DEFAULT_OUT_ERRORS_PATTERN), self::DEFAULT_OUT_ERRORS_PATTERN);
@@ -133,6 +138,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 					'summary_uptime_item_key' => $summary_uptime_item_key,
 					'summary_serial_item_key' => $summary_serial_item_key,
 					'speed_item_pattern' => $speed_pattern,
+				'speed_unit_mode' => $speed_unit_mode,
 				'utilization_overlay_enabled' => $utilization_overlay_enabled,
 				'utilization_low_threshold' => $util_low_threshold,
 				'utilization_warn_threshold' => $util_warn_threshold,
@@ -308,7 +314,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 					$speed_raw = (float) ($speed_values_alt[$speed_key_alt] ?? 0.0);
 				}
 			}
-			$speed_bps = $this->toSpeedBps($speed_raw, $speed_key_used);
+			$speed_bps = $this->toSpeedBps($speed_raw, $speed_unit_mode);
 			$utilization = ($speed_bps > 0.0) ? (($traffic_bps / $speed_bps) * 100.0) : null;
 			$port['utilization_percent'] = $utilization;
 			if ($utilization === null) {
@@ -405,6 +411,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'summary_uptime_item_key' => $summary_uptime_item_key,
 				'summary_serial_item_key' => $summary_serial_item_key,
 				'speed_item_pattern' => $speed_pattern,
+				'speed_unit_mode' => $speed_unit_mode,
 				'utilization_overlay_enabled' => $utilization_overlay_enabled,
 				'utilization_low_threshold' => $util_low_threshold,
 				'utilization_warn_threshold' => $util_warn_threshold,
@@ -859,34 +866,48 @@ class WidgetView extends CControllerDashboardWidgetView {
 			return [];
 		}
 
-		$regular_candidates = [];
-		$sfp_candidates = [];
+		// Explicit SFP start: map Ethernet and SFP from independent index ranges
+		// so SFP indexes may sit before Ethernet (e.g. MikroTik ifIndex order).
+		if ($sfp_port_count > 0 && $sfp_index_start > 0) {
+			$regular_end = $port_index_start + $regular_port_count;
+			$sfp_end = $sfp_index_start + $sfp_port_count;
+			$regular_candidates = [];
+			$sfp_candidates = [];
 
+			foreach ($matches as $index => $key) {
+				if ($index >= $sfp_index_start && $index < $sfp_end) {
+					$sfp_candidates[$index] = $key;
+					continue;
+				}
+
+				if ($index >= $port_index_start && $index < $regular_end) {
+					$regular_candidates[$index] = $key;
+				}
+			}
+
+			ksort($regular_candidates, SORT_NUMERIC);
+			ksort($sfp_candidates, SORT_NUMERIC);
+
+			return [
+				'regular' => array_values($regular_candidates),
+				'sfp' => array_values($sfp_candidates)
+			];
+		}
+
+		// Optional SFP start unset: take SFPs from the sequence after Ethernet ports.
+		$sequence = [];
 		foreach ($matches as $index => $key) {
 			if ($index < $port_index_start) {
 				continue;
 			}
 
-			if ($sfp_port_count > 0 && $sfp_index_start > 0 && $index >= $sfp_index_start) {
-				$sfp_candidates[] = $key;
-				continue;
-			}
-
-			$regular_candidates[] = $key;
+			$sequence[] = $key;
 		}
 
-		$regular_keys = array_slice($regular_candidates, 0, $regular_port_count);
-		if ($sfp_port_count > 0) {
-			if ($sfp_index_start > 0) {
-				$sfp_keys = array_slice($sfp_candidates, 0, $sfp_port_count);
-			}
-			else {
-				$sfp_keys = array_slice($regular_candidates, $regular_port_count, $sfp_port_count);
-			}
-		}
-		else {
-			$sfp_keys = [];
-		}
+		$regular_keys = array_slice($sequence, 0, $regular_port_count);
+		$sfp_keys = $sfp_port_count > 0
+			? array_slice($sequence, $regular_port_count, $sfp_port_count)
+			: [];
 
 		return [
 			'regular' => array_values($regular_keys),
@@ -1396,13 +1417,13 @@ class WidgetView extends CControllerDashboardWidgetView {
 		return is_numeric($text) ? (float) $text : 0.0;
 	}
 
-	private function toSpeedBps(float $speed_value, string $speed_key): float {
+	private function toSpeedBps(float $speed_value, int $speed_unit_mode): float {
 		if ($speed_value <= 0.0) {
 			return 0.0;
 		}
 
-		// Common pattern: ifHighSpeed is in Mbit/s, ifSpeed is in bit/s.
-		if (stripos($speed_key, 'ifhighspeed') !== false) {
+		// Explicit unit from widget config (same idea as Traffic data unit).
+		if ($speed_unit_mode === self::SPEED_UNIT_MBPS) {
 			return $speed_value * 1000000.0;
 		}
 

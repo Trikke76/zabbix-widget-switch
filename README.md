@@ -8,28 +8,31 @@ Uses native Zabbix selection fields.
 
 ## Configure
 
-1. Set `Override host` to a host, or leave it linked to the dashboard/template context.
+1. Select `Host` (on normal dashboards). On template dashboards the linked host is used automatically.
 2. Set `Rows` and `Ports per row` (total ports = rows x ports per row).
 3. Set optional `Brand` and `Model` text for switch bezel.
 4. Set widget `Name` to control the dashboard widget title (header text).
 5. Optional: set `Legend text` (leave empty to hide).
 6. Optional: set traffic patterns (`Traffic in item pattern`, `Traffic out item pattern`) using `*` as port placeholder (example: `ifInOctets[*]`).
 7. Optional: set `Port index start` for wildcard mapping (`*`), default `1` (set `0` for devices where first interface index is 0).
-8. Optional: set `Speed item pattern` (example: `ifHighSpeed[*]`) for utilization calculations.
-9. Optional: set `Show utilization overlay` to enable/disable heatmap strip + grid.
-10. Optional: tune utilization thresholds (`Low`, `Warn`, `High`) and colors (`Low`, `Warn`, `High`, `n/a`).
-11. Optional: select `Profile` to auto-fill layout (`Rows`, `Ports per row`, `SFP ports`, `Size (%)`, `Brand`, `Model`).
-12. Optional: rename profile directly next to `Profile`.
-13. Optional: use `Save current to selected profile` to overwrite selected profile (1-7).
-14. Set optional `Size (%)` (40-100) to make switch compact.
-15. Set optional `SFP ports` (0 = none, 2 = two extra SFP ports).
-16. Select per-port `Trigger` from dropdown (for selected host).
-17. Set per-port `Default color`, `Trigger OK color` and `Trigger NOK color`.
-18. Optional: use `Bulk actions` to apply one color to all ports for each state.
+8. Optional: set `SFP index start` when SFP SNMP indexes are not contiguous after Ethernet (leave `0` to auto-take SFPs after Ethernet).
+9. Optional: set `Speed item pattern` (example: `ifHighSpeed[*]` or `net.if.speed[ifHighSpeed.*]`) for utilization calculations.
+10. Optional: set `Speed data unit` to match how Zabbix stores the speed value (`Mbps` for raw `ifHighSpeed[*]`, `b/s` for template items like `net.if.speed[ifHighSpeed.*]` that already apply ×1,000,000).
+11. Optional: set `Show utilization overlay` to enable/disable heatmap strip + grid.
+12. Optional: tune utilization thresholds (`Low`, `Warn`, `High`) and colors (`Low`, `Warn`, `High`, `n/a`).
+13. Optional: select `Profile` to auto-fill layout (`Rows`, `Ports per row`, `SFP ports`, `Size (%)`, `Brand`, `Model`).
+14. Optional: rename profile directly next to `Profile`.
+15. Optional: use `Save current to selected profile` to overwrite selected profile (1-7).
+16. Set optional `Size (%)` (40-100) to make switch compact.
+17. Set optional `SFP ports` (0 = none, 2 = two extra SFP ports).
+18. Select per-port `Trigger` from dropdown (for selected host).
+19. Set per-port `Default color`, `Trigger OK color` and `Trigger NOK color`.
+20. Optional: use `Bulk actions` to apply one color to all ports for each state.
 
 Note: Trigger options are rendered server-side from selected host.
 If you change host, reopen widget edit to refresh trigger lists.
-On template dashboards, the linked host is used automatically.
+On template dashboards, the linked host is used automatically (`template_support`).
+`SFP index start` may be lower than `Port index start` (for example MikroTik: SFP ifIndex 11-14, Ether from 15).
 
 ## UI
 
