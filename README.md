@@ -46,6 +46,12 @@ On template dashboards, the linked host is used automatically (`template_support
   - state/type/trigger text
   - IN/OUT sparkline + latest value (when user has item read permission)
 
+## Release Notes 1.2.11
+- Fixed wildcard mapping when SFP SNMP indexes come before Ethernet indexes (MikroTik-style layouts).
+- Added `Speed data unit` (`Mbps` or `b/s`) so utilization works with both raw `ifHighSpeed[*]` and template items like `net.if.speed[ifHighSpeed.*]`.
+- Restored direct `Host` selection on normal dashboards.
+- Bound template-dashboard widgets to the dashboard host context so port data loads on linked hosts.
+
 ## Release Notes 1.2.10
 - Switched host selection to Zabbix `Override host` so the widget follows dashboard/template host context.
 - Resolved host via template/dashboard linkage when no override is set.
