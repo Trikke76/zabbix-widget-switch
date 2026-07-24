@@ -31,7 +31,7 @@ Uses native Zabbix selection fields.
 
 Note: Trigger options are rendered server-side from selected host.
 If you change host, reopen widget edit to refresh trigger lists.
-On template dashboards, the linked host is used automatically (`template_support`).
+On template dashboards, the linked host is used automatically (`template_support`); re-save the widget once after upgrading so the dashboard host reference is stored.
 `SFP index start` may be lower than `Port index start` (for example MikroTik: SFP ifIndex 11-14, Ether from 15).
 
 ## UI
