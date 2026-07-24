@@ -43,6 +43,14 @@ On template dashboards, the linked host is used automatically.
   - state/type/trigger text
   - IN/OUT sparkline + latest value (when user has item read permission)
 
+## Release Notes 1.2.10
+- Switched host selection to Zabbix `Override host` so the widget follows dashboard/template host context.
+- Resolved host via template/dashboard linkage when no override is set.
+- Added host name link in the switch header when a host is available.
+
+## Release Notes 1.2.9
+- Marked the widget as available for template dashboards in `manifest.json`.
+
 ## Release Notes 1.2.8
 - Added support for large SNMP interface indexes in wildcard-based item mapping.
 - Increased key field widths for better readability in widget configuration.
@@ -51,9 +59,6 @@ On template dashboards, the linked host is used automatically.
 - Moved heatmap legend into the switch header to free vertical space above the switch.
 - Updated live panel label from `Utilization` to `Port utilization` for clarity.
 - Tightened live metric value alignment so IN/OUT/utilization values stay visually closer to their labels.
-
-## Release Notes 1.2.9
-- Marked the widget as available for template dashboards in `manifest.json`.
 
 ## Release Notes 1.2.6
 
