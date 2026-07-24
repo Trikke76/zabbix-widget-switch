@@ -43,6 +43,10 @@ On template dashboards, the linked host is used automatically.
   - state/type/trigger text
   - IN/OUT sparkline + latest value (when user has item read permission)
 
+## Release Notes 1.2.8
+- Added support for large SNMP interface indexes in wildcard-based item mapping.
+- Increased key field widths for better readability in widget configuration.
+
 ## Release Notes 1.2.7
 - Moved heatmap legend into the switch header to free vertical space above the switch.
 - Updated live panel label from `Utilization` to `Port utilization` for clarity.
@@ -78,7 +82,11 @@ On template dashboards, the linked host is used automatically.
 Profiles are stored in `profiles.json` inside the module directory.  
 The web/PHP user must be able to write this file when using `Save current to selected profile`.
 
-Example (RHEL/Alma/Rocky with `apache`):
+Common paths:
+- Zabbix 7.x: `/usr/share/zabbix/modules/switch/profiles.json`
+- Zabbix 8.x: `/usr/share/zabbix/ui/modules/switch/profiles.json`
+
+Example (RHEL/Alma/Rocky with `apache`, Zabbix 7.x path):
 
 ```bash
 sudo chown root:apache /usr/share/zabbix/modules/switch/profiles.json
@@ -92,6 +100,8 @@ If SELinux is enabled, also set writable context:
 sudo semanage fcontext -a -t httpd_sys_rw_content_t "/usr/share/zabbix/modules/switch/profiles.json"
 sudo restorecon -v /usr/share/zabbix/modules/switch/profiles.json
 ```
+
+For Zabbix 8.x, use the same commands but replace `/usr/share/zabbix/modules/switch/...` with `/usr/share/zabbix/ui/modules/switch/...`.
 
 ---
 
