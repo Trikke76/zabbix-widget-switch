@@ -52,7 +52,7 @@ Auto-assign is especially useful on template dashboards: leave port triggers emp
   - state/type/trigger text
   - IN/OUT sparkline + latest value (when user has item read permission)
 
-## Release Notes 1.2.12
+## Release Notes 1.3.0
 - Added optional `Zig-zag port layout` (odd ports on top / even on bottom per two-row block).
 - Added `Combo ports` field with visual highlight for combo interfaces.
 - Added per-port `is SFP` override (`Auto` / `Yes` / `No`) while keeping uplink block placement from `SFP ports`.
