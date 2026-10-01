@@ -104,7 +104,7 @@ class PortSupport {
 	}
 
 	/**
-	 * Reorder UTP ports into zig-zag faceplate order (even on top, odd on bottom),
+	 * Reorder UTP ports into zig-zag faceplate order (odd on top, even on bottom),
 	 * processed in blocks of two rows so multi-row layouts stay coherent.
 	 *
 	 * @param list<array> $ports
@@ -133,8 +133,8 @@ class PortSupport {
 			$top = [];
 			$bottom = [];
 			foreach ($block as $index => $port) {
-				// Even port numbers (1-based) → top row; odd → bottom row.
-				if (($index % 2) === 1) {
+				// Odd port numbers (1-based, even 0-based index) → top row; even → bottom row.
+				if (($index % 2) === 0) {
 					$top[] = $port;
 				}
 				else {

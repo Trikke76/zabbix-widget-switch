@@ -26,7 +26,7 @@ Uses native Zabbix selection fields.
 16. Set optional `Size (%)` (40-100) to make switch compact.
 17. Set optional `SFP ports` (0 = none, 2 = two extra SFP ports in the uplink block).
 18. Optional: set `Combo ports` as comma-separated numbers or ranges (`25,26` or `25-28`) to highlight combo ports.
-19. Optional: enable `Zig-zag port layout` so even ports render on the top row and odd ports on the bottom row within each two-row block (faceplate style). Default is off.
+19. Optional: enable `Zig-zag port layout` so odd ports render on the top row and even ports on the bottom row within each two-row block (faceplate style). Default is off.
 20. Optional: enable `Auto-assign port triggers` (default on) so empty port trigger fields are filled from host triggers named like `Port N: Link down` / `Interface N … down` at render time and in the edit form. Manual selections are never overwritten.
 21. Select per-port `Trigger` from dropdown (for selected host).
 22. Optional: set per-port `Port N is SFP` to `Auto` (follow layout), `Yes` (SFP jack), or `No` (RJ45 jack) for mixed layouts. Layout split (UTP vs uplink block) still follows `SFP ports`.
@@ -53,7 +53,7 @@ Auto-assign is especially useful on template dashboards: leave port triggers emp
   - IN/OUT sparkline + latest value (when user has item read permission)
 
 ## Release Notes 1.2.12
-- Added optional `Zig-zag port layout` (even ports on top / odd on bottom per two-row block).
+- Added optional `Zig-zag port layout` (odd ports on top / even on bottom per two-row block).
 - Added `Combo ports` field with visual highlight for combo interfaces.
 - Added per-port `is SFP` override (`Auto` / `Yes` / `No`) while keeping uplink block placement from `SFP ports`.
 - Added `Auto-assign port triggers` (shared matching in PHP + edit form) for empty fields using `Port N` / `Interface N` link-down style names — helps template dashboards without hardcoded trigger IDs.
