@@ -26,7 +26,9 @@ $css = implode('', [
 	'.port24-card{position:relative;display:block;text-decoration:none;color:#d8e1ea;background:#11161b;border:1px solid #2b3642;',
 	'border-radius:4px;padding:calc(4px * var(--port24-scale)) calc(4px * var(--port24-scale)) calc(12px * var(--port24-scale)) calc(4px * var(--port24-scale));min-height:calc(44px * var(--port24-scale));box-shadow:inset 0 -1px 0 rgba(255,255,255,.04);}',
 	'.port24-card:hover{border-color:#7b8794;}',
+	'.port24-card.is-combo{border-color:#fcd34d;border-width:2px;box-shadow:inset 0 -1px 0 rgba(255,255,255,.04),0 0 8px rgba(252,211,77,.35);}',
 	'.port24-card.port24-heatmap{box-shadow:inset 0 -3px 0 var(--util-c,#64748B), inset 0 -1px 0 rgba(255,255,255,.04);}',
+	'.port24-card.port24-heatmap.is-combo{box-shadow:inset 0 -3px 0 var(--util-c,#64748B), inset 0 -1px 0 rgba(255,255,255,.04),0 0 8px rgba(252,211,77,.35);}',
 	'.port24-jack{height:calc(22px * var(--port24-scale));position:relative;border:1px solid #1f2730;border-radius:2px 2px 4px 4px;',
 	'background:linear-gradient(180deg,#eef3f8 0 20%,#0d1318 20% 100%);overflow:hidden;}',
 	'.port24-jack:before{content:"";position:absolute;left:calc(6px * var(--port24-scale));right:calc(6px * var(--port24-scale));top:0;height:calc(7px * var(--port24-scale));background:#06090d;',
@@ -157,12 +159,21 @@ $utp_ports = [];
 $sfp_ports = [];
 foreach ($data['ports'] as $port) {
 	$port['__display_index'] = count($utp_ports) + count($sfp_ports) + 1;
-	if (!empty($port['is_sfp'])) {
+	// Prefer explicit layout block flag; fall back to is_sfp for older payloads.
+	$in_sfp_block = array_key_exists('in_sfp_block', $port)
+		? !empty($port['in_sfp_block'])
+		: !empty($port['is_sfp']);
+	if ($in_sfp_block) {
 		$sfp_ports[] = $port;
 	}
 	else {
 		$utp_ports[] = $port;
 	}
+}
+
+$zig_zag_layout = ((int) ($data['zig_zag_layout'] ?? 0)) === 1;
+if ($zig_zag_layout) {
+	$utp_ports = \Modules\SwitchWidget\Includes\PortSupport::applyZigZagOrder($utp_ports, $columns);
 }
 
 $util_color_for = static function(?float $util) use ($util_low_threshold, $util_warn_threshold, $util_high_threshold, $util_low_color, $util_warn_color, $util_high_color, $util_na_color): string {
@@ -229,6 +240,9 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 		$state = _('OK');
 	}
 	$port_type = !empty($port['is_sfp']) ? 'SFP' : 'RJ45';
+	if (!empty($port['is_combo'])) {
+		$port_type = 'Combo ('.$port_type.')';
+	}
 	$tooltip = $port['name']."\n".sprintf(_('State: %s'), $state);
 	$tooltip .= "\n".sprintf(_('Type: %s'), $port_type);
 	if (isset($port['utilization_percent']) && $port['utilization_percent'] !== null) {
@@ -426,6 +440,9 @@ $make_card = static function(array $port) use ($show_utilization_overlay, $util_
 		->setAttribute('onmouseenter', $live_select_js)
 		->setAttribute('onclick', $live_select_js)
 		->setAttribute('onfocus', $live_select_js);
+	if (!empty($port['is_combo'])) {
+		$card->addClass('is-combo');
+	}
 	if ($show_utilization_overlay) {
 		$card
 			->addClass('port24-heatmap')

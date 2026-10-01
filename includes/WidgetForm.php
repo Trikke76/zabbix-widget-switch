@@ -198,6 +198,22 @@ class WidgetForm extends CWidgetForm {
 			->addField(
 				(new CWidgetFieldTextBox('sfp_ports', _('SFP ports')))
 					->setDefault('0')
+			)
+			->addField(
+				(new CWidgetFieldTextBox('combo_ports', _('Combo ports')))
+					->setDefault('')
+			)
+			->addField(
+				(new CWidgetFieldSelect('zig_zag_layout', _('Zig-zag port layout'), [
+					0 => _('No'),
+					1 => _('Yes')
+				]))->setDefault(0)
+			)
+			->addField(
+				(new CWidgetFieldSelect('auto_assign_triggers', _('Auto-assign port triggers'), [
+					0 => _('No'),
+					1 => _('Yes')
+				]))->setDefault(1)
 			);
 
 			for ($p = 1; $p <= 7; $p++) {
@@ -254,6 +270,13 @@ class WidgetForm extends CWidgetForm {
 				->addField(
 					(new CWidgetFieldTextBox('port'.$i.'_trigger_color', sprintf(_('Port %d trigger NOK color'), $i)))
 						->setDefault('#e53e3e')
+				)
+				->addField(
+					(new CWidgetFieldSelect('port'.$i.'_sfp', sprintf(_('Port %d is SFP'), $i), [
+						0 => _('Auto'),
+						1 => _('Yes'),
+						2 => _('No')
+					]))->setDefault(0)
 				);
 		}
 

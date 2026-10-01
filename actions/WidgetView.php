@@ -5,6 +5,7 @@ namespace Modules\SwitchWidget\Actions;
 use API;
 use CControllerDashboardWidgetView;
 use CControllerResponseData;
+use Modules\SwitchWidget\Includes\PortSupport;
 
 class WidgetView extends CControllerDashboardWidgetView {
 	private const DEFAULT_ROW_COUNT = 2;
@@ -94,7 +95,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				$this->formatThreshold($util_high_threshold)
 			);
 		}
-		$ports = $this->loadPortsFromFields($layout['total_ports']);
+		$ports = $this->loadPortsFromFields($layout['total_ports'], $hostid);
 		$host_meta = $this->loadHostMeta($hostid);
 		$summary_item_keys = [
 			'software' => $summary_software_item_key,
@@ -165,6 +166,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'row_count' => $layout['row_count'],
 				'ports_per_row' => $layout['ports_per_row'],
 				'sfp_ports' => $layout['sfp_ports'],
+				'zig_zag_layout' => ((int) ($this->fields_values['zig_zag_layout'] ?? 0)) === 1 ? 1 : 0,
 				'switch_summary' => $this->buildSwitchSummary($host_meta, $layout, $ports),
 				'ports' => [],
 				'user' => [
@@ -194,9 +196,32 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$sfp_index_start
 		);
 
+		$combo_ports = array_fill_keys(
+			PortSupport::parseComboPorts((string) ($this->fields_values['combo_ports'] ?? '')),
+			true
+		);
+		$zig_zag_layout = ((int) ($this->fields_values['zig_zag_layout'] ?? 0)) === 1 ? 1 : 0;
+
 		foreach ($ports as $index => &$port) {
-			$port['is_sfp'] = ($layout['sfp_ports'] > 0 && ($index + 1) >= $sfp_start_index);
-			if ($port['is_sfp'] && $sfp_index_start > 0) {
+			$in_sfp_block = ($layout['sfp_ports'] > 0 && ($index + 1) >= $sfp_start_index);
+			$sfp_mode = (int) ($this->fields_values['port'.($index + 1).'_sfp'] ?? 0);
+			// 0 = Auto (follow layout), 1 = force SFP visual, 2 = force RJ45 visual.
+			if ($sfp_mode === 1) {
+				$port['is_sfp'] = true;
+			}
+			elseif ($sfp_mode === 2) {
+				$port['is_sfp'] = false;
+			}
+			else {
+				$port['is_sfp'] = $in_sfp_block;
+			}
+			$port['in_sfp_block'] = $in_sfp_block;
+			$port['is_combo'] = isset($combo_ports[$index + 1]);
+			if ($port['is_combo'] && stripos($port['name'], 'combo') !== 0) {
+				$port['name'] = 'Combo '.$port['name'];
+			}
+
+			if ($in_sfp_block && $sfp_index_start > 0) {
 				$mapped_port_index = $sfp_index_start + (($index + 1) - $sfp_start_index);
 			}
 			else {
@@ -213,10 +238,10 @@ class WidgetView extends CControllerDashboardWidgetView {
 				: '';
 			$port['trigger_name'] = $meta !== null ? $meta['description'] : '';
 			$port['hostid'] = $hostid;
-			$port_position = $port['is_sfp']
+			$port_position = $in_sfp_block
 				? (($index + 1) - $sfp_start_index)
 				: $index;
-			$port_group = $port['is_sfp'] ? 'sfp' : 'regular';
+			$port_group = $in_sfp_block ? 'sfp' : 'regular';
 			$port['traffic_in_item_key'] = $this->resolvePortItemKey(
 				$traffic_in_pattern,
 				$mapped_port_index,
@@ -438,6 +463,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 				'row_count' => $layout['row_count'],
 				'ports_per_row' => $layout['ports_per_row'],
 				'sfp_ports' => $layout['sfp_ports'],
+				'zig_zag_layout' => $zig_zag_layout,
 				'switch_summary' => $switch_summary,
 				'ports' => $ports,
 				'user' => [
@@ -610,15 +636,44 @@ class WidgetView extends CControllerDashboardWidgetView {
 		return $resolved !== '' ? $resolved : 'NETSWITCH';
 	}
 
-	private function loadPortsFromFields(int $total_ports): array {
+	private function loadPortsFromFields(int $total_ports, string $hostid = ''): array {
 		$ports = [];
+		$auto_assign = ((int) ($this->fields_values['auto_assign_triggers'] ?? 1)) === 1;
+		$trigger_map = [];
+
+		if ($auto_assign && $hostid !== '' && $hostid !== '0') {
+			$triggers = API::Trigger()->get([
+				'output' => ['triggerid', 'description'],
+				'hostids' => [$hostid],
+				'filter' => ['status' => 0],
+				'limit' => 1000
+			]);
+
+			if (is_array($triggers)) {
+				$normalized = [];
+				foreach ($triggers as $trigger) {
+					$normalized[] = [
+						'id' => (string) ($trigger['triggerid'] ?? ''),
+						'name' => (string) ($trigger['description'] ?? '')
+					];
+				}
+				$trigger_map = PortSupport::buildPortTriggerSuggestions($normalized);
+			}
+		}
 
 		for ($i = 1; $i <= $total_ports; $i++) {
 			$triggerid_raw = (int) ($this->fields_values['port'.$i.'_triggerid'] ?? 0);
+			$triggerid = $triggerid_raw > 0 ? (string) $triggerid_raw : '';
+
+			// Render-time only: fill empty trigger fields from host link-down triggers.
+			// Manual selections are never overwritten; values are not persisted here.
+			if ($triggerid === '' && isset($trigger_map[$i])) {
+				$triggerid = $trigger_map[$i];
+			}
 
 			$ports[] = [
 				'name' => trim((string) ($this->fields_values['port'.$i.'_name'] ?? sprintf('Port %d', $i))),
-				'triggerid' => $triggerid_raw > 0 ? (string) $triggerid_raw : '',
+				'triggerid' => $triggerid,
 				'default_color' => $this->safeColor((string) ($this->fields_values['port'.$i.'_default_color'] ?? '#d1d5db'), '#d1d5db'),
 				'trigger_ok_color' => $this->safeColor((string) ($this->fields_values['port'.$i.'_trigger_ok_color'] ?? '#22c55e'), '#22c55e'),
 				'trigger_color' => $this->safeColor((string) ($this->fields_values['port'.$i.'_trigger_color'] ?? '#e53e3e'), '#e53e3e')

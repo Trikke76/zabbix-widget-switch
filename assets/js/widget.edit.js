@@ -282,6 +282,7 @@
 			], 60, 60);
 			enforceTextFieldsByLabels(['Brand', 'Model'], 30, 30);
 			enforceTextFieldsByLabels(['Size (%)', 'Rows', 'Ports per row', 'SFP ports'], 6, 4, {numericOnly: true});
+			enforceTextFieldsByLabels(['Combo ports'], 24, 18);
 			enforceTextFieldsByLabels(['Port index start', 'SFP index start (optional)'], 8, 6, {numericOnly: true});
 			const sfpIndexField = findField('sfp_index_start');
 			if (sfpIndexField) {
@@ -290,6 +291,16 @@
 					const hint = document.createElement('span');
 					hint.className = 'port24-field-hint';
 					hint.textContent = '0 = continue after last UTP port';
+					wrap.appendChild(hint);
+				}
+			}
+			const comboField = findField('combo_ports');
+			if (comboField) {
+				const wrap = comboField.closest('.form-field');
+				if (wrap && !wrap.querySelector('.port24-field-hint')) {
+					const hint = document.createElement('span');
+					hint.className = 'port24-field-hint';
+					hint.textContent = 'e.g. 25,26 or 25-28';
 					wrap.appendChild(hint);
 				}
 			}
@@ -2819,13 +2830,32 @@
 		}
 	}
 
-	function applyTriggers(triggers, hostid) {
+	function applyTriggers(triggers, hostid, portSuggestions) {
 		currentTriggerHostid = String(hostid || '');
 		currentTriggerOptions = Array.isArray(triggers) ? triggers : [];
 
+		const suggestions = (portSuggestions && typeof portSuggestions === 'object')
+			? portSuggestions
+			: {};
+		const autoAssignEnabled = String(findField('auto_assign_triggers')?.value ?? '1') !== '0';
+
 		for (const field of getTriggerFields()) {
 			const select = ensureSelectForField(field);
-			const initial = String(field.value || select.dataset.initialValue || '');
+			let initial = String(field.value || select.dataset.initialValue || '');
+
+			if (autoAssignEnabled && (initial === '' || initial === '0')) {
+				const portMatch = String(field.name || field.id || '').match(/port(\d+)_triggerid/i);
+				const portNum = portMatch ? portMatch[1] : '';
+				const suggested = portNum !== '' ? String(suggestions[portNum] || '') : '';
+				if (suggested !== '' && suggested !== '0') {
+					initial = suggested;
+					field.value = suggested;
+					select.dataset.initialValue = suggested;
+					field.dispatchEvent(new Event('change', {bubbles: true}));
+					field.dispatchEvent(new Event('input', {bubbles: true}));
+				}
+			}
+
 			select.value = initial;
 			setSelectLightOptions(select, currentTriggerHostid, initial);
 		}
@@ -2926,7 +2956,7 @@
 					catch (error) { logDebug("silent catch", error); }
 				}
 
-				return {triggers: []};
+				return {triggers: [], port_suggestions: {}};
 			});
 	}
 
@@ -2958,6 +2988,8 @@
 			let inFlight = false;
 			let uiBootstrapped = false;
 			let lastLayoutKey = '';
+			// hostid|layoutKey for which trigger options + auto-assign already ran.
+			let lastTriggerAssignKey = '';
 
 			const getLayoutKey = () => [
 				readIntField('row_count', '2'),
@@ -2989,22 +3021,46 @@
 					uiBootstrapped = true;
 					lastLayoutKey = layoutKey;
 				}
-					const hostid = getHostId();
-				if (hostid === previousHostId || inFlight) {
+
+				const hostid = getHostId();
+
+				if (inFlight) {
+					return;
+				}
+
+				if (hostid === '') {
+					if (previousHostId !== '' && previousHostId !== null) {
+						applyTriggers([], '', {});
+						previousHostId = '';
+						lastTriggerAssignKey = '';
+					}
+					return;
+				}
+
+				const assignKey = `${hostid}|${layoutKey}`;
+				const hostChanged = hostid !== previousHostId;
+				const needsAssignPass = assignKey !== lastTriggerAssignKey;
+
+				if (!hostChanged && !needsAssignPass) {
 					return;
 				}
 
 				previousHostId = hostid;
 				setItemSuggestionHost(hostid);
-				if (hostid === '') {
-					applyTriggers([], '');
-					return;
-				}
-
 				inFlight = true;
 				fetchTriggers(hostid)
-					.then((payload) => applyTriggers(payload.triggers || [], hostid))
-					.catch(() => applyTriggers([], hostid))
+					.then((payload) => {
+						applyTriggers(
+							payload.triggers || [],
+							hostid,
+							payload.port_suggestions || {}
+						);
+						lastTriggerAssignKey = assignKey;
+					})
+					.catch(() => {
+						applyTriggers([], hostid, {});
+						lastTriggerAssignKey = assignKey;
+					})
 					.finally(() => {
 						inFlight = false;
 					});

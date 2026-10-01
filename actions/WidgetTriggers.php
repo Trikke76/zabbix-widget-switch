@@ -5,6 +5,7 @@ namespace Modules\SwitchWidget\Actions;
 use API;
 use CController;
 use CControllerResponseData;
+use Modules\SwitchWidget\Includes\PortSupport;
 
 class WidgetTriggers extends CController {
 	protected function init(): void {
@@ -60,9 +61,17 @@ class WidgetTriggers extends CController {
 			}
 		}
 
+		$suggestions = PortSupport::buildPortTriggerSuggestions($result);
+		// JSON object keys must be strings for stable client parsing.
+		$port_suggestions = [];
+		foreach ($suggestions as $port => $triggerid) {
+			$port_suggestions[(string) $port] = $triggerid;
+		}
+
 		$this->setResponse(new CControllerResponseData([
 			'main_block' => json_encode([
-				'triggers' => $result
+				'triggers' => $result,
+				'port_suggestions' => $port_suggestions
 			])
 		]));
 	}
